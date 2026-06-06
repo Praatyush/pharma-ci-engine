@@ -1,0 +1,27 @@
+# Secrets — NEVER commit real credentials
+.env
+.env.*
+!.env.example
+
+# Data — PDFs, FAISS index, scratch (must never be committed)
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Legacy v0 desktop-app artifacts (do not reintroduce)
+*.app
+dist/
+build/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

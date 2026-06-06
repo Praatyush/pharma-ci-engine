@@ -1,0 +1,1 @@
+# pytest tests mirror src/ (tests/ingestion, tests/extraction, ...). Keep dir tracked while empty.
