@@ -20,8 +20,8 @@ the nested file, not here.
 > becomes real.
 
 ```bash
-# Environment (Python 3.11+)
-python3 -m venv .venv && source .venv/bin/activate
+# Environment (Python 3.11+ — system python3 is 3.9 here; use an explicit 3.11+)
+python3.11 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env            # then fill in real keys locally (never commit .env)
 
