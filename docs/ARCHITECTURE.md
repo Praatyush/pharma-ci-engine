@@ -188,11 +188,17 @@ without sacrificing per-field reliability.
 - **Aliases are stored as observed.** `Asset` and company aliases are recorded as
   they appear in each document; cross-document alias merging / entity resolution
   is **explicitly deferred** (not attempted in v1) — see below.
-- **Temporal provenance.** `SourceRef.as_of_date` is the document's stated
-  snapshot date; `Program.as_of_date` denormalizes it onto the pipeline fact
-  (whose whole meaning is "stage as of date X") for direct querying. Other facts
-  carry their own event date — `RegulatoryEvent.date`, `Trial.readout_date`,
-  `MarketMetric.period`.
+- **Temporal provenance: document-date vs fact-date.** `as_of_date` appears on
+  both `SourceRef` and `Program` because they mean **different things**, not
+  because one is a cached copy of the other. `SourceRef.as_of_date` is the source
+  document's stated snapshot date (e.g. "as of May 13, 2026" on the Takeda table)
+  — a property of the *document*. `Program.as_of_date` is the date that specific
+  pipeline fact is true as of — a property of the *fact*. These usually coincide
+  but can differ (a report published in April can restate a status current as of
+  an earlier cutoff, or cite a readout from a specific prior date), so collapsing
+  them would lose the ability to reason about a fact whose validity date differs
+  from its document's date. Other facts carry their own event date —
+  `RegulatoryEvent.date`, `Trial.readout_date`, `MarketMetric.period`.
 
 > Treat this schema as the contract. Extraction populates it; RAG indexes it;
 > evals score against it; the agent cites through `SourceRef`.
