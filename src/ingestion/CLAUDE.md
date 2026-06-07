@@ -2,29 +2,40 @@
 
 ## Purpose
 
-Download PDFs, extract text with `pdfplumber` (upgrade table handling for
-clinical/financial tables), clean, and **token-based chunk with overlap**.
+Load markdown reports from `data/reports/`, apply light normalization, and
+**section-aware chunk** them. v1 is **markdown-only** — PDF download /
+`pdfplumber` / PDF→markdown are deferred (see `docs/ARCHITECTURE.md`).
 
-Salvages v0's download helper (`requests`/`httpx` + UA header) and pdfplumber
-extraction — but the chunker is **rewritten**: token-based with overlap, **not**
-v0's ~2500-word splitter. No map-reduce, no whole-document summarization.
+- `loader.py` — `load_report(path, *, source_company, doc_type, ...) -> LoadedReport`
+  (`Document` metadata + cleaned text/lines; the `Document` schema has no content
+  field, so the text travels alongside it).
+- `chunker.py` — `chunk_document(loaded, ChunkConfig) -> list[Chunk]`.
 
-Downstream contract: emit clean chunks each carrying enough provenance
-(`document_id`, `page`) to populate `schema.SourceRef` later.
+Downstream contract: each `Chunk` carries provenance sufficient to build
+`schema.SourceRef` — `document_id`, section/header path, 1-based inclusive
+`line_range`, and the verbatim snippet. Extraction (next step) consumes chunks;
+this module does **not** call any LLM.
 
 ## Run & test
 
 ```bash
-pytest tests/ingestion -q          # module tests (added in Phase 1)
-# CLI entry point TBD (Phase 1)
+pytest tests/ingestion -q
 ```
 
 ## Conventions
 
-- Token-based chunking with overlap; keep chunk size + overlap configurable.
-- Harden download error handling (timeouts, non-200, content-type).
-- Preserve page numbers through extraction for citations.
+- **Character-based** chunking with overlap (no tokenizer dependency — see
+  `docs/LEARNINGS.md` 2026-06-07). Keep `chunk_size` + `overlap` configurable via
+  `ChunkConfig`.
+- Chunk on markdown structure (headers) first; **pack** small consecutive
+  sections up to the size budget; char-window + overlap only **within** an
+  oversized section.
+- Cleaning is line-stable: provenance line numbers index `LoadedReport.lines`, so
+  keep `snippet` and `line_range` consistent with those canonical lines.
 
 ## Gotchas
 
-_None yet._
+- Table-derived markdown (e.g. the Takeda pipeline) emits many noise `##`
+  "headers" (single cells like `## ★`). Section **packing** is what stops that
+  from exploding into hundreds of one-line chunks; the header breadcrumb is only
+  as meaningful as the source's actual structure.
