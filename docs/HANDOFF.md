@@ -35,6 +35,9 @@ Q1-2026 report). Docs only — no `src/` or `data/` changes.
   axes. `Trial.nct_id` is optional (corpus trials are named by acronym, not NCT).
   Companies are **plain strings**, not an entity — the old `Competitor` entity is
   removed; company views are derived by grouping on the `company` string.
+  `as_of_date` intentionally appears on **both** `SourceRef` (the document's
+  snapshot date) and `Program` (the date the fact is true as of) — two distinct
+  meanings, usually coincident.
 
 ### Deliberate cuts (scope, not oversight — additive later)
 - **Deal / M&A entity** (e.g. the Avidity acquisition, Takeda partnership tables).
@@ -56,6 +59,9 @@ Q1-2026 report). Docs only — no `src/` or `data/` changes.
 - `docs/ARCHITECTURE.md` — Domain-schema section rewritten to the 7-entity model;
   Project section + new "Therapeutic-area scope" note; evals scoring sentence;
   `oncology` → multi-TA scope sweep.
+- `docs/ARCHITECTURE.md` — `as_of_date` temporal-provenance rationale reframed
+  (document-date vs fact-date); committed separately as
+  `docs: clarify as_of_date temporal-provenance rationale` (`22edc93`).
 - `docs/HANDOFF.md` — this entry.
 - (Also since Phase 0: the proposed venv tweak was approved and committed as
   `4e4cb62` — `python3.11 -m venv`.)
@@ -112,12 +118,11 @@ Q1-2026 report). Docs only — no `src/` or `data/` changes.
 - **Python version:** default `python3` on this machine is **3.9.6**; the
   project requires **3.11+**. Homebrew provides `python3.11` and `python3.13`
   at `/opt/homebrew/bin/` — use one of those for the venv. See `LEARNINGS.md`.
-- **Proposed CLAUDE.md tweak (awaiting approval):** change the venv command from
+- **CLAUDE.md venv tweak — RESOLVED:** changed the venv command from
   `python3 -m venv .venv` to `python3.11 -m venv .venv` so it doesn't silently
-  build a 3.9 venv. Not applied yet (self-improvement protocol: propose, don't
-  silently rewrite core instructions).
-- **Git identity** was unset globally; set **locally** for this repo to
-  `Praatyush <praatyushg@gmail.com>`. Change if that's not the intended author.
+  build a 3.9 venv. Approved and committed as `4e4cb62`.
+- **Git identity — settled:** repo stays on `Praatyush <praatyushg@gmail.com>`
+  (set locally for this repo); confirmed intentional.
 - No code/tests yet — scaffold only. First tests land in Phase 1.
 
 ### Recommended next step
