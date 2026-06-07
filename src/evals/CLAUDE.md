@@ -22,7 +22,7 @@ pytest tests/evals -q              # harness unit tests
 
 ## Conventions
 
-- Golden labels are hand-made from the Novartis / GSK / Takeda reports; treat
+- Golden labels are hand-made from the Novartis and Takeda reports; treat
   `evals/golden/` as ground truth — change it deliberately, never to chase a
   score.
 - Make scores reproducible and diffable across runs (pin inputs, record model +

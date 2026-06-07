@@ -290,7 +290,7 @@ this — the agent should stop for review between phases, not run end-to-end.)
 - **Phase 1 — Ingestion + schema + extraction.** Token-chunking; Pydantic
   schema; structured-output extraction into it.
 - **Phase 2 — Evals + golden set (baseline).** Hand-label facts from the
-  Novartis / GSK / Takeda reports; extraction accuracy + a first regression
+  Novartis and Takeda reports; extraction accuracy + a first regression
   run. **Establish the baseline before "improving" anything downstream.**
 - **Phase 3 — FAISS RAG.** Embeddings, index persistence, hybrid retrieval,
   corpus Q&A with citations; add retrieval evals + groundedness.
