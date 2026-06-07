@@ -38,7 +38,7 @@ worked example (notably its rich endpoint vocabulary) — now one area among man
 
 ```
                 ┌─────────────┐
-  PDFs ───────▶ │  ingestion  │  download · extract · clean · token-chunk
+  markdown ───▶ │  ingestion  │  load · clean · token-chunk
                 └──────┬──────┘
                        ▼
                 ┌─────────────┐
@@ -61,9 +61,9 @@ worked example (notably its rich endpoint vocabulary) — now one area among man
 
 ## Modules (`src/`)
 
-- **`ingestion/`** — download PDFs, extract text (pdfplumber; upgrade table
-  handling), clean, and **token-based** chunk with overlap. Salvages v0's
-  download + extraction; rewrites the chunker.
+- **`ingestion/`** — load markdown reports from `data/reports/`, clean, and
+  **token-based** chunk with overlap. v1's canonical (and only) document format
+  is markdown; PDF ingestion is deferred (see note below).
 - **`schema/`** — the domain model (below). Pydantic models used for both
   structured-output extraction and typed storage.
 - **`extraction/`** — LLM extraction from chunks into `schema` objects via
@@ -86,7 +86,13 @@ worked example (notably its rich endpoint vocabulary) — now one area among man
   synthesis that **cites sources**. Tools: `corpus_retrieve` (rag),
   `clinicaltrials_lookup`, `fda_lookup`.
 - **`tools/`** — external API clients: ClinicalTrials.gov, FDA/EMA. Keeps the
-  system current instead of limited to static PDFs.
+  system current instead of limited to static reports.
+
+> **Deferred to a later iteration (deliberate scope cut, not an oversight):**
+> PDF URL ingestion, PDF download, and PDF→markdown conversion. v1's canonical
+> and only document format is markdown — ingestion reads the markdown reports
+> already in `data/reports/`. `pdfplumber` returns to the tech stack when PDF
+> ingestion does.
 
 ## Domain schema (`src/schema/`)
 
@@ -226,7 +232,8 @@ is additive later without reshaping the core:
 - OpenAI SDK — LLM + `text-embedding-3-*` (keep model names configurable)
 - **FAISS** (vector store) · `rank-bm25` (keyword leg of hybrid retrieval)
 - **Pydantic v2** (schema + structured outputs)
-- `pdfplumber` (extraction) · `httpx` / `requests` (downloads + API tools)
+- `httpx` / `requests` (live API tools) — `pdfplumber` (PDF extraction) returns
+  when PDF ingestion does (deferred; see Modules → `ingestion/`)
 - **pytest** (tests + eval harness)
 - No GUI, no packaging — CLI / library-first
 

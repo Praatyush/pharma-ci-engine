@@ -5,6 +5,33 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Pre-Phase-1 — Ingestion scoped to markdown (2026-06-07)
+
+Docs-only alignment before Phase 1 — no `src/` or `data/` changes.
+
+### Decision
+- **v1's canonical (and only) document format is markdown.** The corpus is the
+  markdown reports already in `data/reports/` (Novartis Q1-2026 financial report,
+  Takeda Q4 pipeline table). Ingestion loads markdown, cleans, and token-chunks
+  with overlap.
+- **PDF URL ingestion, PDF download, and PDF→markdown conversion are DEFERRED**
+  to a later iteration — a deliberate scope cut, not an oversight. `pdfplumber`
+  returns to the v1 tech stack when PDF ingestion does.
+
+### Files changed
+- `docs/ARCHITECTURE.md` — ingestion module description (markdown-first; PDF path
+  removed), system-overview diagram input/ops, a "Deferred to a later iteration"
+  note after the Modules list, and the tech-stack line (dropped `pdfplumber` from
+  the v1 list, noting its return).
+- `docs/HANDOFF.md` — this entry.
+
+### Recommended next step
+- Unchanged: **Phase 1 — ingestion + schema + extraction** MAY begin on explicit
+  approval. Ingestion now targets markdown in `data/reports/`; start with
+  `src/schema` (Pydantic v2 models of the 7 entities) as before.
+
+---
+
 ## Pre-Phase-1 — Schema & architecture finalization (2026-06-06)
 
 Scope and schema **locked before any Phase 1 implementation**, after a
