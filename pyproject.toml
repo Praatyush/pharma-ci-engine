@@ -1,0 +1,27 @@
+[project]
+name = "pharma-ci-engine"
+version = "0.1.0"
+description = "Multi-therapeutic-area pharma competitive-intelligence engine"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2",   # domain schema + structured-output extraction (v2)
+    "google-genai",  # Gemini SDK — LLM structured-output extraction
+]
+
+# Phase-scoped deps are added when their phase starts (see ARCHITECTURE.md
+# "Build order"): faiss-cpu + rank-bm25 (Phase 3 RAG), httpx (Phase 4 tools),
+# pdfplumber (deferred with PDF ingestion).
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]   # retires the root conftest.py sys.path shim
+testpaths = ["tests"]

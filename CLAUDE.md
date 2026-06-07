@@ -22,8 +22,9 @@ the nested file, not here.
 ```bash
 # Environment (Python 3.11+ — system python3 is 3.9 here; use an explicit 3.11+)
 python3.11 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e ".[dev]"         # deps + dev tools (pytest) from pyproject.toml
 cp .env.example .env            # then fill in real keys locally (never commit .env)
+set -a; source .env; set +a     # load .env into the shell (no python-dotenv)
 
 # Test (pytest)
 pytest                          # full suite

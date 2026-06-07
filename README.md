@@ -34,16 +34,17 @@ PDFs ─▶ ingestion ─▶ extraction ─▶ ┌─ rag (FAISS + hybrid retrie
 
 ## Tech stack
 
-Python 3.11+ · OpenAI SDK (LLM + `text-embedding-3-*`) · FAISS · `rank-bm25` ·
+Python 3.11+ · Gemini SDK (LLM + embeddings) · FAISS · `rank-bm25` ·
 Pydantic v2 · pdfplumber · httpx · pytest. CLI / library-first — no GUI, no
 packaging.
 
 ## Quickstart
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
 cp .env.example .env          # fill in real keys locally; never commit .env
+set -a; source .env; set +a   # load .env into the shell (no python-dotenv)
 pytest                        # run the test suite
 ```
 

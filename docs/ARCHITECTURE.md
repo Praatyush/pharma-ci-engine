@@ -38,7 +38,7 @@ worked example (notably its rich endpoint vocabulary) — now one area among man
 
 ```
                 ┌─────────────┐
-  markdown ───▶ │  ingestion  │  load · clean · token-chunk
+  markdown ───▶ │  ingestion  │  load · clean · char-chunk (+overlap)
                 └──────┬──────┘
                        ▼
                 ┌─────────────┐
@@ -62,8 +62,9 @@ worked example (notably its rich endpoint vocabulary) — now one area among man
 ## Modules (`src/`)
 
 - **`ingestion/`** — load markdown reports from `data/reports/`, clean, and
-  **token-based** chunk with overlap. v1's canonical (and only) document format
-  is markdown; PDF ingestion is deferred (see note below).
+  **character-based** chunk with overlap (configurable size + overlap). v1's
+  canonical (and only) document format is markdown; PDF ingestion is deferred
+  (see note below).
 - **`schema/`** — the domain model (below). Pydantic models used for both
   structured-output extraction and typed storage.
 - **`extraction/`** — LLM extraction from chunks into `schema` objects via
@@ -229,7 +230,7 @@ is additive later without reshaping the core:
 ## Tech stack
 
 - Python 3.11+
-- OpenAI SDK — LLM + `text-embedding-3-*` (keep model names configurable)
+- Gemini SDK (`google-genai`) — LLM + embeddings (keep model names configurable)
 - **FAISS** (vector store) · `rank-bm25` (keyword leg of hybrid retrieval)
 - **Pydantic v2** (schema + structured outputs)
 - `httpx` / `requests` (live API tools) — `pdfplumber` (PDF extraction) returns
@@ -246,7 +247,7 @@ pharma-ci-engine/
 ├── README.md
 ├── .gitignore
 ├── .env.example              # template only — NEVER commit a real .env
-├── requirements.txt
+├── pyproject.toml            # deps + build + pytest config (single source)
 ├── docs/
 │   ├── ARCHITECTURE.md        # this file
 │   ├── V0_ARCHITECTURE.md     # legacy brief (context only)
@@ -287,8 +288,8 @@ this — the agent should stop for review between phases, not run end-to-end.)
   (source of truth) + a nested `CLAUDE.md` in each `src/` module, plus
   `.gitignore`, `.env.example`, `docs/LEARNINGS.md`, `requirements.txt`,
   `README.md`. Initial commit.
-- **Phase 1 — Ingestion + schema + extraction.** Token-chunking; Pydantic
-  schema; structured-output extraction into it.
+- **Phase 1 — Ingestion + schema + extraction.** Character-based chunking;
+  Pydantic schema; structured-output extraction into it.
 - **Phase 2 — Evals + golden set (baseline).** Hand-label facts from the
   Novartis and Takeda reports; extraction accuracy + a first regression
   run. **Establish the baseline before "improving" anything downstream.**
