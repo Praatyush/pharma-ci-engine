@@ -20,7 +20,7 @@ design priority. Store ISO-8601 where the source gives a full date; store the
 source's verbatim expression otherwise.
 """
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .enums import (
     Agency,
@@ -151,6 +151,31 @@ class Asset(_Base):
     route: str | None = Field(
         None, description="Route of administration, e.g. 'oral', 'IV', 'subcutaneous'."
     )
+
+    @model_validator(mode="after")
+    def _require_identifier(self) -> "Asset":
+        """At least one human-facing identifier must be present.
+
+        ``id`` is an internal surrogate and ``company`` is the owner — neither
+        names the molecule. Require ``generic_name`` OR a development code OR a
+        brand name OR an alias. Whitespace-only strings count as empty.
+        """
+
+        def _has_text(value: str | None) -> bool:
+            return bool(value and value.strip())
+
+        has_identifier = (
+            _has_text(self.generic_name)
+            or any(_has_text(code) for code in self.development_codes)
+            or any(_has_text(name) for name in self.brand_names)
+            or any(_has_text(alias) for alias in self.aliases)
+        )
+        if not has_identifier:
+            raise ValueError(
+                "Asset requires at least one identifier: generic_name, "
+                "development_codes, brand_names, or aliases"
+            )
+        return self
 
 
 # --------------------------------------------------------------------------- #

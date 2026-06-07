@@ -77,6 +77,22 @@ def test_asset_minimal_dev_code_only():
     assert asset.development_codes == ["TAK-279"]
 
 
+def test_asset_anonymous_rejected():
+    # No identifier at all (only id + company) -> rejected by the model validator.
+    with pytest.raises(ValidationError) as exc_info:
+        Asset(id="asset-x", company="Takeda")
+    assert (
+        "Asset requires at least one identifier: generic_name, "
+        "development_codes, brand_names, or aliases" in str(exc_info.value)
+    )
+
+
+def test_asset_whitespace_generic_name_rejected():
+    # Whitespace-only generic_name is treated as empty -> does not satisfy the constraint.
+    with pytest.raises(ValidationError):
+        Asset(id="asset-x", company="Takeda", generic_name="  ")
+
+
 def test_program_valid_carries_source_ref():
     prog = Program(
         id="prog-1",
@@ -215,6 +231,7 @@ def test_open_vocab_accepts_out_of_vocab():
     asset = Asset(
         id="a",
         company="NewCo",
+        generic_name="novelmab",  # identifier so the Asset is constructible
         target="some-novel-target-XYZ",
         modality="mRNA-LNP",
     )
