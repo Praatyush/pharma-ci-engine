@@ -9,17 +9,30 @@
 
 ## Project
 
-**`pharma-ci-engine`** (rename freely) — an **oncology competitive-intelligence
-engine**. It ingests dense pharma documents and live clinical/regulatory data,
-extracts them into a structured domain model, retrieves over that corpus, and
-answers competitive-intelligence questions with **grounded, cited** output —
-all measured by an offline eval harness.
+**`pharma-ci-engine`** (rename freely) — a **multi-therapeutic-area pharma
+competitive-intelligence engine**. It ingests dense pharma documents and live
+clinical/regulatory data, extracts them into a structured domain model,
+retrieves over that corpus, and answers competitive-intelligence questions with
+**grounded, cited** output — all measured by an offline eval harness.
 
 This replaces v0's generic financial summarizer. The pivot — from financial
-summary to **product-level clinical lifecycle intelligence** (pipeline phase,
+summary to **product-level clinical lifecycle intelligence** (pipeline stage,
 clinical endpoints, trial status, regulatory timelines, competitive
 benchmarking) — is the entire point of the rebuild and is encoded in the
 domain schema below.
+
+### Therapeutic-area scope
+
+**Multi-TA by design — not oncology-only.** The corpus (e.g. the Takeda pipeline
+table and the Novartis Q1-2026 report) spans oncology, immunology, neuroscience,
+gastroenterology, rare disease, vaccines, cardiometabolic, and more — and
+**breadth comes from the corpus, not from more entity types.** To capture every
+TA while keeping per-field extraction reliable, the schema uses **open free-text**
+for the fields whose vocabulary is genuinely open-ended (`therapeutic_area`,
+`indication`, `target`, `modality`, endpoint) and retains **closed enums** only
+where the vocabulary is genuinely closed and stable (trial `phase`, program
+`stage`, regulatory `agency` and `action`, `region`). Oncology stays a useful
+worked example (notably its rich endpoint vocabulary) — now one area among many.
 
 ## System overview
 
@@ -64,8 +77,11 @@ domain schema below.
   layers: extraction accuracy (precision/recall vs. golden), groundedness /
   faithfulness (LLM-as-judge — every claim must trace to a source passage),
   retrieval quality (precision@k / recall@k), and a domain-relevance rubric
-  (clinical signal vs. generic-financial noise). A regression runner scores
-  every prompt/model change.
+  (clinical signal vs. generic-financial noise). Extraction accuracy scores
+  closed-enum and ID fields by **exact match** and the open free-text fields
+  (`therapeutic_area`, `indication`, `target`, `modality`, endpoint) by
+  **normalized/fuzzy match**. A regression runner scores every prompt/model
+  change.
 - **`agent/`** — single research agent: a planning loop, tool definitions, and
   synthesis that **cites sources**. Tools: `corpus_retrieve` (rag),
   `clinicaltrials_lookup`, `fda_lookup`.
@@ -74,24 +90,129 @@ domain schema below.
 
 ## Domain schema (`src/schema/`)
 
-The structured model that encodes the oncology-CI pivot. Pydantic v2 models:
+The structured model that encodes the multi-TA pharma-CI pivot — **7 entities**,
+described here as field lists (the Pydantic v2 implementation is Phase 1, per the
+build order). The model is optimized, in order, for **(1) extraction reliability,
+(2) evaluation quality, (3) simplicity** — explicitly over maximum coverage.
+Breadth comes from the corpus (many TAs), not from more entity types.
 
-- **`Drug`** — `name`, `generic_name`, `mechanism_of_action`,
-  `target_indication`, `modality`, `company`.
-- **`Trial`** — `nct_id`, `drug`, `phase` (1|2|3|4), `status`
-  (recruiting|active|completed|terminated|...), `primary_endpoint_type`
-  (PFS|OS|ORR|DFS|...), `endpoint_result`, `readout_date`, `indication`.
-- **`RegulatoryEvent`** — `drug`, `agency` (FDA|EMA|...), `action`
-  (approval|CRL|fast_track|breakthrough|withdrawal|...), `date`, `indication`.
-- **`MarketMetric`** — `drug` | `company`, `metric`
-  (revenue|market_share|growth_rate), `value`, `period`, `geography`.
-- **`Competitor`** — `company`, `drugs: list[Drug]`, `focus_areas`.
-- **`SourceRef`** — every extracted fact carries `document_id`, `page`,
-  `snippet`. **Non-negotiable** — this is what makes citation and the
-  faithfulness eval possible.
+Two are provenance types (`Document`, `SourceRef`); one is a noun (`Asset`); four
+are dated fact entities (`Program`, `Trial`, `RegulatoryEvent`, `MarketMetric`).
+**Every fact entity carries a `SourceRef`** — non-negotiable; it is what makes
+citation and the faithfulness eval possible.
+
+### Provenance
+
+- **`Document`** — `id`, `source_company`, `title`, `doc_type`,
+  `publication_date`, `period_covered`, `url`, `language`. The source artifact a
+  fact was extracted from.
+- **`SourceRef`** — `document_id`, `locator` (flexible: `page?` | `section?` |
+  `line_range?` — markdown and tables have no fixed pages), `snippet`,
+  `as_of_date` (the snapshot date the source states, e.g. "as of May 13, 2026").
+  Attached to **every** fact below.
+
+### Noun
+
+- **`Asset`** (a drug as a noun — one molecule) — `id`, `generic_name`,
+  `development_codes[]`, `brand_names[]`, `aliases[]`, `company` (string owner),
+  `originator_company` (string, optional), `target`, `mechanism_of_action`,
+  `modality`, `route` (optional). **`indication` is NOT on `Asset`** — one asset
+  is pursued across many indications; that lives on `Program`.
+
+### Fact entities (each carries `source_ref`)
+
+- **`Program`** (a dated development fact: asset × indication × region × stage) —
+  `id`, `asset_id`, `therapeutic_area`, `indication`, `line_of_therapy`
+  (optional), `region`, `stage`, `status_reason` (optional), `formulation`
+  (optional), `as_of_date`, `source_ref`. This is the native shape of a pipeline
+  table row.
+- **`Trial`** — `id`, `trial_name` (optional), `nct_id` (**optional**),
+  `asset_ids[]`, `indication`, `phase`, `comparator` (optional),
+  `primary_endpoint`, `met_primary_endpoint` (optional bool),
+  `statistical_significance` (optional), `endpoint_result`, `readout_date`
+  (optional), `region` (optional), `source_ref`.
+- **`RegulatoryEvent`** — `asset_id`, `agency`, `region`, `action`, `status`
+  (optional: `granted` | `pending` | `denied`), `date`, `indication`,
+  `source_ref`.
+- **`MarketMetric`** — `subject` (`asset_id` | `company` string), `metric`,
+  `value`, `unit`, `currency` (optional), `basis` (optional), `period`,
+  `geography`, `source_ref`.
+
+### Closed enums (small, stable — kept strict; exact-match in evals)
+
+- **`Document.doc_type`** — `pipeline_table` | `financial_report` |
+  `press_release` | `other`
+- **`region`** (Program · Trial · RegulatoryEvent) — `US` | `EU` | `JP` | `CN` |
+  `Global` | `other`
+- **`Program.stage`** — `preclinical` | `P1` | `P1/2` | `P2` | `P2a` | `P2b` |
+  `P3` | `filed` | `approved` | `discontinued`
+- **`Trial.phase`** — `1` | `1/2` | `2` | `2a` | `2b` | `3` | `4`
+- **`RegulatoryEvent.agency`** — `FDA` | `EMA` | `PMDA` | `NMPA` | `MHLW` |
+  `other`
+- **`RegulatoryEvent.action`** — `filed` | `approval` | `CRL` |
+  `priority_review` | `breakthrough` | `fast_track` | `orphan` | `PRIME` |
+  `CHMP_opinion` | `application_withdrawal` | `product_withdrawal` | `other`
+- **`MarketMetric.metric`** — `revenue` | `growth_rate` | `market_share` |
+  `patient_count` | `country_count`
+- **`MarketMetric.basis`** — `reported` | `constant_currency`
+
+### Open free-text (multi-TA breadth lives here)
+
+Each carries a **suggested** vocabulary in its field description to steer
+extraction, but values are **never coerced to an enum** — out-of-vocab values
+pass through **verbatim**. This is the deliberate mechanism for covering every TA
+without sacrificing per-field reliability.
+
+- **`therapeutic_area`** — suggested: oncology, immunology, neuroscience,
+  gastroenterology, rare_disease, vaccines, cardiometabolic, …
+- **`indication`** — free text.
+- **`target`** — e.g. Claudin 18.2, TYK2, BCR-ABL, FRα, …
+- **`modality`** — suggested: small_molecule, mAb, ADC, bispecific, radioligand,
+  gene_therapy, cell_therapy, siRNA/RNAi, peptide, plasma_derived, vaccine, …
+- **`primary_endpoint`** — suggested: PFS, OS, ORR, DFS, DOR, EFS, pCR, PASI,
+  DLQI, HbA1c, EDSS, immunogenicity, … (oncology's rich endpoint set is the
+  worked example here).
+
+### Design rules
+
+- **Asset vs Program.** An `Asset` is a noun (one molecule); a `Program` is a
+  dated fact (one asset, one indication/region, one stage). One asset → many
+  programs. This matches the native shape of pipeline tables.
+- **`Program.stage` and `Trial.phase` are different axes — do not collapse
+  them.** `stage` is the asset's lifecycle in an indication/region (including
+  `filed`, `approved`, `discontinued`); `phase` is a specific trial's phase. An
+  asset can be `filed` (stage) while a confirmatory phase-`3` trial still runs.
+- **Companies are plain strings, not an entity.** There is no `Competitor`
+  entity; company-level views (a competitor's portfolio, focus areas) are
+  *derived* by grouping assets/metrics on their `company` string.
+- **Aliases are stored as observed.** `Asset` and company aliases are recorded as
+  they appear in each document; cross-document alias merging / entity resolution
+  is **explicitly deferred** (not attempted in v1) — see below.
+- **Temporal provenance.** `SourceRef.as_of_date` is the document's stated
+  snapshot date; `Program.as_of_date` denormalizes it onto the pipeline fact
+  (whose whole meaning is "stage as of date X") for direct querying. Other facts
+  carry their own event date — `RegulatoryEvent.date`, `Trial.readout_date`,
+  `MarketMetric.period`.
 
 > Treat this schema as the contract. Extraction populates it; RAG indexes it;
 > evals score against it; the agent cites through `SourceRef`.
+
+### Deferred / extension points (deliberate scope cuts, not oversights)
+
+Each is cut to protect extraction reliability, eval quality, and simplicity, and
+is additive later without reshaping the core:
+
+- **Deal / M&A entity** — acquisitions, licensing, collaborations,
+  rights/territory splits, deal financials (e.g. the Avidity acquisition and
+  Takeda's partnership tables) are not modeled in v1.
+- **Asset + company alias auto-resolution** — aliases are stored, not merged
+  across documents.
+- **Rich `Company` entity** — type / country / platforms; companies stay plain
+  strings.
+- **Biomarker / population fields** — e.g. "FRα-positive", pediatrics.
+- **Combination / regimen modeling** — `Trial.asset_ids[]` can list the assets,
+  but combination semantics (e.g. BrECADD) are not modeled.
+- **Generic / biosimilar / loss-of-exclusivity tracking.**
 
 ## Tech stack
 
