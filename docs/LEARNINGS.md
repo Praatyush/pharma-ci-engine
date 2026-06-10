@@ -1,5 +1,23 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-10 — therapeutic_area is reported descriptively, NOT scored for accuracy
+
+**What:** `metrics.py` first scored `therapeutic_area` as a matched-program attribute (5
+"errors" like von Willebrand disease `hematology` vs `rare_disease`).
+
+**Why that's wrong:** `therapeutic_area` is OPEN free-text **by locked design** — we deliberately
+did not enumerate it because there is no canonical TA taxonomy. Scoring it for accuracy against a
+golden label smuggles a taxonomy back in (the labeler's bucket becomes "correct"), contradicting
+the reason the field is open. `indication` is different — "IgA nephropathy" is a fact with real
+ground truth, so it stays a fuzzy **key**.
+
+**Fix:** `therapeutic_area` is EXCLUDED from scored attribute-accuracy and emitted as a
+descriptive `ta_disagreements` list (predicted bucket vs golden bucket + line_range), never an
+error count. Aggregate P/R/F1 is unaffected (TA was never in TP/FP/FN). The same taxonomy-free
+property applies to `modality` / `target` / `primary_endpoint` — also open, also not scored for
+accuracy. (Aside, from the same review: `metrics._locate` is display/provenance only and is not
+in the scoring path — the program TP 32→31 move was union cross-chunk dedup, not `_locate`.)
+
 ## 2026-06-10 — Golden labeling policies: multi-region, under-specified, ambiguous-region
 
 All from one principle: golden encodes what the SOURCE supports at the SCHEMA's grain — never

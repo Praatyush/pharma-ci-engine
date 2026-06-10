@@ -24,12 +24,15 @@ before batch labeling.
 - `5303825` Novartis **golden chunk 32** scored end-to-end; **company self-reference fix**
   (`normalize.fold_self_reference`: "Company"->source_company, excludes "Total") — chunk-32
   metric flips to 1 TP/0 FP/0 FN.
-- **This commit:** golden **batch** (Takeda chunk 12 IVIG cluster; Novartis chunks 29
-  standalone-reg + 30 RemIND-met/MARINA) + **labeling policies 1-3** (multi-region split;
-  key-incomplete ≠ FP via `matching.is_key_incomplete`/`normalize.is_null_sentinel`;
-  no manufactured region key). 5-chunk matcher: trials 4/4, metrics 1/1, **reg P=1.00 R=0.26
-  (standalone 0.23 / progress 0.30)**, programs P=0.89 R=0.70; chunk-12 reg **0/7**; IVIG
-  over-merge 3 distinct → 1 cluster.
+- `1c261f4` golden **batch** (Takeda chunk 12 IVIG cluster; Novartis chunks 29 standalone-reg
+  + 30 RemIND-met/MARINA) + **labeling policies 1-3** (multi-region split; key-incomplete ≠ FP
+  via `matching.is_key_incomplete`/`normalize.is_null_sentinel`; no manufactured region key).
+- **This commit:** **`metrics.py`** (union scoping; per-type P/R/F1; reg-events at both grains;
+  `key_incomplete` separate; document-level asset precision withheld; miss/FP/KI/attr-error
+  lists carry `line_range`+snippet). `therapeutic_area` **reported descriptively, not scored**
+  (open free-text → no taxonomy to grade against). 5-chunk **union** baseline: programs P=0.89
+  R=0.69, trials 1.00/1.00, **reg P=1.00 R=0.27 (standalone 0.23 / progress 0.33 / region-
+  collapsed 0.20)**, metrics 1.00/1.00; chunk-12 reg **0/7**; IVIG over-merge 3 distinct → 1.
 
 ### Locked this stage
 - **Approved match keys:** Program `(asset, indication~, region, stage)`; Trial
@@ -44,8 +47,18 @@ before batch labeling.
 - **Asset clustering:** Option A (simple merge-on-any-shared-identifier) for v1; over-merge
   measured later (LEARNINGS 2026-06-10).
 
-### Next
-- **Build `metrics.py`** (gated output): scope raw → union of labeled chunks → collapse once →
+### Next (deferred, gated)
+- **`grounding.py`** (predicted-fact-vs-source, NO golden — independent of labeling): does the
+  cited `line_range` contain the fact's salient tokens (via `normalize` synonym map, since
+  source says "approved"/"Phase 3" but enums are "approval"/"3")? `line_range` is load-bearing;
+  snippet is decorative and its chunk-fallback on mashed rows is EXPECTED, not a failure.
+- **Reg-event CENSUS** (stopping criterion as a census, not a sampled threshold): enumerate
+  every reg-event-bearing chunk in BOTH docs so reg-recall is measured over ALL corpus
+  reg-events. Then bulk-label (later turn) each chunk to satisfy metrics + grounding at once.
+- Then runner.py + optional judge. Do NOT declare the Phase-2 baseline until the grounding
+  sample + census are reviewed. Corpus has **zero NCT IDs** (nct_id key-tier untested).
+- _(superseded sub-bullets retained below for the metrics design contract)_
+- metrics.py (DONE this commit): scope raw → union of labeled chunks → collapse once →
   match union (never collapse-then-scope or sum per-chunk). Per-type P/R/F1; reg-events at BOTH
   grains (standalone vs progress-row, AND region-split vs region-collapsed); `key_incomplete`
   counted apart from clean FP. Asset recall over labeled chunks OK; asset **precision stays
