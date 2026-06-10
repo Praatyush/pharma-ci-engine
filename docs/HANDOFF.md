@@ -5,6 +5,56 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 1 — Complete: schema → ingestion → extraction (2026-06-09)
+
+Phase 1 is implemented, committed, and **pushed to `origin/main`**. Work continues
+on branch **`phase-2-evals`** (branched from the Phase-1-complete `main`).
+
+**This entry is the current authoritative state. It supersedes the "Recommended
+next step" notes in the older entries below** — those predate Phase 1 and still
+describe token-based chunking + PDF ingestion, both of which changed.
+
+### Work completed (commits on `main`)
+- `1fccf47` **schema** — Pydantic v2 models of the 7 entities (closed enums as
+  `Literal`; open fields plain `str`); `Asset` requires ≥1 identifier.
+- `767d1c9` **ingestion** — markdown loader (`data/reports/`) + section-aware
+  **character-based** chunker with overlap; each `Chunk` carries provenance.
+- `12db81e` **extraction** — per-chunk Gemini structured-output extraction into
+  schema fact entities, grounded on `line_range` + verbatim snippet.
+- Plus the setup commits (pyproject adoption, Gemini provider, markdown scope).
+  Full suite: **55 tests passing**.
+
+### Decisions that changed since the original (pre-Phase-1) handoff
+- **Chunking is character-based with overlap — NOT token-based.** No tokenizer
+  dependency (tiktoken is OpenAI's BPE, wrong for Gemini; exact Gemini counts are a
+  remote call). See LEARNINGS 2026-06-07.
+- **PDF ingestion deferred — v1 is markdown-only** (`data/reports/`); `pdfplumber`
+  returns when PDF ingestion does.
+- **Extraction model locked: Gemini 3.1 Flash-Lite (`gemini-3.1-flash-lite-preview`).**
+  The binding constraint was free-tier **requests-per-day**, not quality (Flash-Lite
+  500 RPD completes full runs; 3 Flash / 2.5 Flash were capped). Isolated behind the
+  `GEMINI_MODEL` env var — swapping models is a re-run, not a code change. See
+  LEARNINGS 2026-06-09.
+- **Grounding: `line_range` + `snippet` are load-bearing; `section_path` is a
+  decorative best-effort hint** (the corpus is a PDF-to-markdown dump that emits
+  table cells as `##` headers). See LEARNINGS 2026-06-07.
+- **Per-chunk extraction; duplicate assets are by design** — cross-chunk dedup /
+  alias resolution is deferred to assembly (Phase 2+). See LEARNINGS 2026-06-07.
+
+### Outstanding (for Phase 2 to measure — not pipeline bugs)
+- **Flash-Lite regulatory-event and trial recall** vs the partial 2.5 Flash
+  baseline — the main open question.
+- Snippet sharpness on mashed table rows (designed fallback to chunk text);
+  `region="other"` on ambiguous rows (model correctly declining to guess).
+
+### Recommended next step
+- **Phase 2 — eval harness + golden set.** Hand-label facts from the Takeda (and
+  Novartis) reports; score extraction accuracy (exact match on closed-enum/ID
+  fields, normalized/fuzzy on open free-text) and **establish the baseline before
+  building retrieval**. Quantify the Flash-Lite recall gap above.
+
+---
+
 ## Pre-Phase-1 — Ingestion scoped to markdown (2026-06-07)
 
 Docs-only alignment before Phase 1 — no `src/` or `data/` changes.
@@ -153,6 +203,9 @@ Q1-2026 report). Docs only — no `src/` or `data/` changes.
 - No code/tests yet — scaffold only. First tests land in Phase 1.
 
 ### Recommended next step
+- _(SUPERSEDED — see the "Phase 1 — Complete" entry at the top: chunking shipped
+  **character-based**, not token-based, and PDF ingestion was **deferred** in favour
+  of markdown-only. Kept here as the historical Phase-0 record.)_
 - **Phase 1 — Ingestion + schema + extraction:** implement the Pydantic v2
   domain schema (`src/schema`), the token-based chunker + PDF download/extract
   (`src/ingestion`), and structured-output extraction into the schema

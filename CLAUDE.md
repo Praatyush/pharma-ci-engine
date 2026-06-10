@@ -86,5 +86,9 @@ When you fix a non-obvious bug or discover a project convention or gotcha:
   "Build order"). Do not run end-to-end.
 - **Ask before adding any dependency** not already in `requirements.txt`.
 - Commit per phase with clear messages; never commit secrets.
-- At the end of every phase, create/update `docs/HANDOFF.md` (work completed,
-  decisions, files changed, outstanding issues, recommended next step).
+- **Keep `docs/HANDOFF.md` current — not only `docs/LEARNINGS.md`.** At the end of
+  every phase, **and at any commit that changes a locked decision or the build
+  state**, update `HANDOFF.md` so its newest entry reflects the new current state
+  and the next step (work completed, decisions, files changed, outstanding issues).
+  LEARNINGS records gotchas; HANDOFF records where the project *is* — both must stay
+  current, or sessions resume from a stale plan.
