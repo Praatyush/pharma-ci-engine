@@ -48,10 +48,17 @@ before batch labeling.
   measured later (LEARNINGS 2026-06-10).
 
 ### Next (deferred, gated)
-- **`grounding.py` — DONE this commit** (predicted-fact-vs-source, NO golden): per-token
-  containment of the cited `line_range`, closed enums via a reverse surface map. Each missing
-  token categorized `real_failure` / `map_gap` / `inferred`(region) — region grounding is its own
-  number (predicted-side mirror of golden policy 3). Full-run report reviewed-pending.
+- **`grounding.py` — DONE** (commit `1849a1d`; full-run over 307 facts reviewed). Provenance of
+  load-bearing tokens is strong (asset 98% / action 100% / value 100% / indication 97%); region
+  62% (11% inferred) + stage 53% (37% of failures are bare-number map-gap) are DIRECTIONAL with
+  the chunk-granularity caveat; ~0.3% hard wrong-line rate. See LEARNINGS 2026-06-10. No
+  row-level fix (deliberate).
+- **Census labeling — IN PROGRESS (batch mode).** The harness is proven (metrics on 5 chunks +
+  grounding on 307 facts), so single-chunk checkpoints are retired; labeling in batches of ~3-4,
+  committing each batch's golden before the next. Pruned boilerplate (Takeda 0,1; Novartis
+  78,79,96-98). Order: Takeda pipeline-table chunks 7,8,9,10,11,15,16 (the 0/7 status-cell
+  pattern) first, then Novartis 28 + remaining. Expect reg-recall to FALL as these land —
+  finding strengthening, not regression.
 - **Reg-event CENSUS** (stopping criterion as a census, not a sampled threshold): enumerate
   every reg-event-bearing chunk in BOTH docs (candidate list produced; prune Takeda 0,1 +
   Novartis 78,79,96–98 boilerplate). Takeda 7,8,9,10,11,15,16 are the SAME status-cell pattern as

@@ -59,6 +59,71 @@
         {"asset": "TAK-880", "action": "approval", "indication": "Primary Immunodeficiencies", "region": "US", "agency": "FDA", "date": "June 2025", "from_progress_row": true},
         {"asset": "TAK-880", "action": "approval", "indication": "Primary Immunodeficiencies", "region": "EU", "agency": "EMA", "date": "May 2025", "from_progress_row": true}
       ]
+    },
+    {
+      "chunk_index": 8,
+      "line_range": [202, 301],
+      "note": "Main pipeline table (header + rows). Region '-' = not region-specific -> Global (consistent with Novartis ch32 'region not stated -> Global'; distinct from ch29 column-position inference). Only TAK-755 cTTP 'China Filed (Mar 2025)' is a regulatory action (dual-encoded, from_progress_row=true); the rest are P-stage rows. MLN0002 pediatric IV+SC share the (asset,indication,region,stage) key -> one program. TAK-101 cut off at 301 -> asset only.",
+      "assets": [
+        {"identifiers": ["TAK-755", "rADAMTS13", "ADZYNMA"], "modality": "recombinant protein", "target": "ADAMTS13"},
+        {"identifiers": ["MLN0002", "vedolizumab", "ENTYVIO"], "modality": "mAb", "target": "alpha4beta7 integrin"},
+        {"identifiers": ["TAK-999", "fazirsiran"], "modality": "siRNA/RNAi"},
+        {"identifiers": ["TAK-279", "zasocitinib"], "modality": "small_molecule", "target": "TYK2"},
+        {"identifiers": ["TAK-079", "mezagitamab"], "modality": "mAb", "target": "CD38"},
+        {"identifiers": ["TAK-227", "ZED1227"], "modality": "small_molecule", "target": "Transglutaminase 2"},
+        {"identifiers": ["TAK-101"]}
+      ],
+      "programs": [
+        {"asset": "TAK-755", "indication": "Congenital Thrombotic Thrombocytopenic Purpura", "region": "CN", "stage": "filed", "therapeutic_area": "hematology"},
+        {"asset": "MLN0002", "indication": "ulcerative colitis and Crohn's disease", "region": "Global", "stage": "P3", "therapeutic_area": "gastroenterology"},
+        {"asset": "TAK-999", "indication": "Alpha-1 antitrypsin-deficiency associated liver disease", "region": "US", "stage": "P3", "therapeutic_area": "hepatology"},
+        {"asset": "TAK-999", "indication": "Alpha-1 antitrypsin-deficiency associated liver disease", "region": "EU", "stage": "P3", "therapeutic_area": "hepatology"},
+        {"asset": "TAK-279", "indication": "Psoriasis", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "TAK-279", "indication": "Pediatric psoriasis", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "TAK-279", "indication": "Psoriatic arthritis", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "TAK-279", "indication": "Crohn's disease", "region": "Global", "stage": "P2b", "therapeutic_area": "gastroenterology"},
+        {"asset": "TAK-279", "indication": "Ulcerative colitis", "region": "Global", "stage": "P2b", "therapeutic_area": "gastroenterology"},
+        {"asset": "TAK-279", "indication": "Vitiligo", "region": "Global", "stage": "P2b", "therapeutic_area": "immunology"},
+        {"asset": "TAK-279", "indication": "Hidradenitis suppurativa", "region": "Global", "stage": "P2a", "therapeutic_area": "immunology"},
+        {"asset": "TAK-079", "indication": "Immune thrombocytopenia", "region": "Global", "stage": "P3", "therapeutic_area": "hematology"},
+        {"asset": "TAK-079", "indication": "Immunoglobulin A nephropathy", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "TAK-227", "indication": "Celiac disease", "region": "Global", "stage": "P2b", "therapeutic_area": "gastroenterology"}
+      ],
+      "regulatory_events": [
+        {"asset": "TAK-755", "action": "filed", "indication": "Congenital Thrombotic Thrombocytopenic Purpura", "region": "CN", "agency": "NMPA", "date": "Mar 2025", "from_progress_row": true}
+      ]
+    },
+    {
+      "chunk_index": 9,
+      "line_range": [302, 389],
+      "note": "Tail of immunology/GI table (TAK-101 TIMP, TAK-781) + Neuroscience Pipeline + start of Oncology (SGN-35 cut off). Region '-' -> Global. TAK-861 Narcolepsy type 1 region-split filings: JP Filed (Mar 2026) / US Filed (Feb 2026) / CN Filed (Jan 2026) [policy 1: three reg-events] + EU still P-III. TAK-755 acute ischemic stroke P2 + an unnamed Phase-2 trial (footnote *2). TAK-495 has no indication in-source ('- - P-I') -> asset only.",
+      "assets": [
+        {"identifiers": ["TAK-781"], "modality": "siRNA/RNAi", "target": "CYP7A1"},
+        {"identifiers": ["TAK-861", "oveporexton"], "modality": "small_molecule", "target": "Orexin 2R"},
+        {"identifiers": ["TAK-755", "rADAMTS13"], "modality": "recombinant protein", "target": "ADAMTS13"},
+        {"identifiers": ["TAK-360"], "modality": "small_molecule", "target": "Orexin 2R"},
+        {"identifiers": ["TAK-495"], "modality": "small_molecule", "target": "Orexin 2R"},
+        {"identifiers": ["SGN-35", "brentuximab vedotin"]}
+      ],
+      "programs": [
+        {"asset": "TAK-101", "indication": "Celiac disease", "region": "Global", "stage": "P2", "therapeutic_area": "gastroenterology"},
+        {"asset": "TAK-781", "indication": "Primary sclerosing cholangitis", "region": "Global", "stage": "P1", "therapeutic_area": "hepatology"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "JP", "stage": "filed", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "US", "stage": "filed", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "CN", "stage": "filed", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "EU", "stage": "P3", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-755", "indication": "Acute ischemic stroke", "region": "Global", "stage": "P2", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-360", "indication": "Idiopathic hypersomnia", "region": "Global", "stage": "P2", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-360", "indication": "Narcolepsy type 2", "region": "Global", "stage": "P2", "therapeutic_area": "neuroscience"}
+      ],
+      "trials": [
+        {"assets": ["TAK-755"], "indication": "Acute ischemic stroke", "phase": "2", "met_primary_endpoint": null}
+      ],
+      "regulatory_events": [
+        {"asset": "TAK-861", "action": "filed", "indication": "Narcolepsy type 1", "region": "JP", "agency": "PMDA", "date": "Mar 2026", "from_progress_row": true},
+        {"asset": "TAK-861", "action": "filed", "indication": "Narcolepsy type 1", "region": "US", "agency": "FDA", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-861", "action": "filed", "indication": "Narcolepsy type 1", "region": "CN", "agency": "NMPA", "date": "Jan 2026", "from_progress_row": true}
+      ]
     }
   ]
 }

@@ -1,5 +1,31 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-10 — Grounding full-run findings + the chunk-granularity caveat
+
+Full grounding run over all **307 predicted facts** (`grounding.py`, commit `1849a1d`):
+
+- **Headline provenance (PRECISE, reportable):** the load-bearing tokens ground high and are NOT
+  affected by chunk granularity (they key on locally-unique, molecule-specific tokens): **asset
+  98%, action 100%, value 100%, indication 97%**. Predicted facts are genuinely cited to lines
+  that contain the molecule / regulatory verb / number / indication.
+- **CHUNK-GRANULARITY CAVEAT (stated property of the layer):** grounding checks token presence
+  *anywhere* in the cited `line_range`, so for dense chunks (Takeda L25-84 = 30 programs in one
+  range) region/stage both **over-credit** (a neighbor row's region rescues a wrong fact) and
+  **over-fail** (`Global` in a chunk that names specific regions). Therefore **region (62%) and
+  stage (53%) are DIRECTIONAL indicators of a real weakness, NOT precise rates** — this caveat
+  travels with those two numbers wherever reported. We are deliberately **not** building a
+  row-level fix: sub-splitting line_ranges fights the chunk-based provenance model, and the
+  finding holds whether it's 62% or 58%. Measure-and-caveat.
+- **Region inference = predicted-side mirror of golden policy 3 (finding, not a bug):** 11% of
+  region tokens are `Global` with NO region word in the source. The two harness halves agree
+  from opposite directions (golden excludes region-inferred facts; grounding flags them).
+- **Stage failure split:** 40 `map_gap` / 69 `real_failure` → ~37% of stage "failures" are
+  fixable token-map coverage (Novartis bare-number phase encoding), not extraction faults.
+- **Hard provenance error rate ~0.3%:** of 7 `asset` real_failures, **6 are market-metric
+  subjects** (value grounds; the subject word isn't on the cited line — the company
+  self-reference finding), and **1 is a genuine wrong-line citation** (177Lu-NeoB cited to a
+  Duchenne MD row). 1 confirmed wrong-line provenance error in 307 facts — logged, not chased.
+
 ## 2026-06-10 — Grounding: region-inferred and map-gap are distinct from real failures
 
 `grounding.py` checks whether a predicted fact's cited `line_range` contains its salient tokens
