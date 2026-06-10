@@ -16,6 +16,13 @@ from .extractor import (
     extract_document,
 )
 from .models import ChunkExtraction
+from .persistence import (
+    count_by_type,
+    load_extraction,
+    result_from_dict,
+    result_to_dict,
+    save_extraction,
+)
 
 __all__ = [
     "EXTRACTION_SYSTEM_PROMPT",
@@ -23,4 +30,9 @@ __all__ = [
     "extract_chunk",
     "extract_document",
     "ChunkExtraction",
+    "count_by_type",
+    "load_extraction",
+    "result_from_dict",
+    "result_to_dict",
+    "save_extraction",
 ]

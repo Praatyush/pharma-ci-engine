@@ -1,5 +1,25 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-09 — Extraction output must be persisted (the prior run was lost)
+
+**What:** The "34/34 Flash-Lite run completed" recorded in HANDOFF left **no artifact on
+disk** — a Phase-2 scan of the repo, `/tmp`, and `$HOME` turned up no pickle/JSON. The
+output had lived only in memory (any `/tmp` scratch was ephemeral / cleared), so it could
+not be scored without re-running and re-burning free-tier quota.
+
+**Why:** `extract_document` returned an in-memory `ExtractionResult`; nothing serialized
+it. `/tmp` is not durable, and the result was never written under the repo's gitignored
+`data/`.
+
+**Fix:** Added `src/extraction/persistence.py` (`save_extraction` / `load_extraction`: a
+versioned `schema_version` + `meta` + `counts` + `result` JSON that round-trips an
+`ExtractionResult` losslessly) and a CLI `python -m src.extraction.run --report <name>`
+that runs paced extraction and writes the artifact to `data/eval/extractions/` (gitignored
+via `data/`). That persisted artifact is the **fixed input** the eval harness scores
+against — produced once, never re-extracted just to iterate on scoring. **Rule:** any
+expensive LLM pass downstream work depends on must be persisted to `data/` at
+produce-time, not held in memory or `/tmp`.
+
 ## 2026-06-09 — Extraction model decision: Gemini 3.1 Flash-Lite + pacing
 
 **Model decision:** Gemini 3.1 Flash-Lite (`gemini-3.1-flash-lite-preview`) is the v1

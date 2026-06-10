@@ -5,14 +5,58 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 2 (Stage 1) — Extraction persistence + Takeda baseline artifact (2026-06-09)
+
+**Current authoritative state** (supersedes the Phase 1 entry below). Work continues on
+branch **`phase-2-evals`**. Phase 2 is being built in two stages with a checkpoint
+between; this is **Stage 1** — the scoreable extraction artifact — *before* the eval
+harness itself.
+
+### Work completed
+- **Extraction persistence** — `src/extraction/persistence.py`: `save_extraction` /
+  `load_extraction`, a versioned (`schema_version="1"`) self-describing JSON envelope
+  (`meta` + `counts` + `result`) that round-trips an `ExtractionResult` losslessly.
+- **Run CLI** — `src/extraction/run.py` (`python -m src.extraction.run --report takeda`):
+  load → chunk → paced per-chunk extraction (4.5s) with progress logging → persist to
+  `data/eval/extractions/` (gitignored via `data/`). Named presets for takeda/novartis;
+  `--path/--company/...` overrides; `--limit` for a subset run.
+- **`extract_document`** gained two backward-compatible kwargs: `delay_seconds=0.0`
+  (proactive pacing, default off) and `on_chunk` (progress callback). Existing
+  behavior/tests unchanged.
+- Tests: **59 passing** (+4 persistence round-trip).
+
+### Baseline artifact (the input Phase 2 scores against)
+- `data/eval/extractions/qr2025_q4_Pipeline_table_en.extraction.json` — Takeda, full
+  document, 34/34 chunks, zero failures. Model `gemini-3.1-flash-lite-preview`,
+  git_sha `bace5ce`.
+- Counts: **assets 150, programs 178, trials 5, regulatory_events 13, market_metrics 0**
+  (assets duplicated per-chunk by design). Takeda is trial-thin and carries no financial
+  metrics → confirms the **Novartis slice** is needed for trial-recall + market-metric
+  scoring.
+
+### Decisions / notes
+- Extraction output is now a **persisted, versioned artifact** under gitignored `data/`,
+  never held in memory / `/tmp` (see LEARNINGS 2026-06-09).
+- Snippet fallback to chunk text is visible on mashed table rows; duplicate facts are
+  present by design. Both are **Phase-2 eval measurement targets, not Stage-1 bugs**.
+
+### Recommended next step
+- Finish Stage 1: produce the **Novartis slice artifact** (only the trial-/metric-heavy
+  chunks, not all 100). Then **Stage 2** — golden labeling + the eval harness (matching,
+  duplicate-collapse, normalization, metrics). Do not start Stage 2 until both artifacts
+  are confirmed.
+
+---
+
 ## Phase 1 — Complete: schema → ingestion → extraction (2026-06-09)
 
 Phase 1 is implemented, committed, and **pushed to `origin/main`**. Work continues
 on branch **`phase-2-evals`** (branched from the Phase-1-complete `main`).
 
-**This entry is the current authoritative state. It supersedes the "Recommended
-next step" notes in the older entries below** — those predate Phase 1 and still
-describe token-based chunking + PDF ingestion, both of which changed.
+**This entry records Phase 1 completion** (superseded as "current state" by the Phase 2
+entry above). It still supersedes the "Recommended next step" notes in the older entries
+below — those predate Phase 1 and still describe token-based chunking + PDF ingestion,
+both of which changed.
 
 ### Work completed (commits on `main`)
 - `1fccf47` **schema** — Pydantic v2 models of the 7 entities (closed enums as

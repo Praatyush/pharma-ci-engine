@@ -12,6 +12,8 @@ output are expected, not a bug.
 """
 
 import re
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from src.ingestion.chunker import Chunk
@@ -232,12 +234,33 @@ def extract_chunk(
 
 
 def extract_document(
-    chunks: list[Chunk], *, source_company: str, as_of_date: str
+    chunks: list[Chunk],
+    *,
+    source_company: str,
+    as_of_date: str,
+    delay_seconds: float = 0.0,
+    on_chunk: Callable[[int, int, ExtractionResult], None] | None = None,
 ) -> ExtractionResult:
-    """Extract every chunk of a document and concatenate the results (no dedup)."""
+    """Extract every chunk of a document and concatenate the results (no dedup).
+
+    ``delay_seconds`` paces calls: it sleeps before each chunk *after the first*,
+    so consecutive Gemini calls are spaced out. The free tier needs **proactive**
+    pacing (~4.5s ≈ 13 req/min, under the 15 RPM cap) — reactive 429 backoff alone
+    drops chunks (see ``docs/LEARNINGS.md`` 2026-06-09). Defaults to 0.0 so unit
+    tests and in-process callers are unaffected.
+
+    ``on_chunk(index, total, chunk_result)`` is invoked after each chunk for
+    progress reporting; it receives that chunk's own result (not the accumulator).
+    """
     result = ExtractionResult()
-    for chunk in chunks:
-        result.extend(
-            extract_chunk(chunk, source_company=source_company, as_of_date=as_of_date)
+    total = len(chunks)
+    for index, chunk in enumerate(chunks):
+        if delay_seconds and index > 0:
+            time.sleep(delay_seconds)
+        chunk_result = extract_chunk(
+            chunk, source_company=source_company, as_of_date=as_of_date
         )
+        result.extend(chunk_result)
+        if on_chunk is not None:
+            on_chunk(index, total, chunk_result)
     return result
