@@ -5,11 +5,26 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
-## Phase 2 (Stage 2, in progress) — Eval harness: matching machinery + golden labeling (2026-06-10)
+## Phase 2 — COMPLETE: eval harness + golden baseline (2026-06-10)
 
 **Current authoritative state** (supersedes the Stage 1 entry below). Branch
-**`phase-2-evals`**. Building the harness incrementally with single-chunk checkpoints
-before batch labeling.
+**`phase-2-evals`** (pushed). Phase 2 (evals + golden set) is **DONE**: the baseline
+deliverable — a pinned, decomposed `report.md`/`report.json` via `python -m src.evals.run`
+— is built, tested, and reviewed.
+
+### Headline finding (the defensible baseline result)
+- **Plasma-table reg-events are systematically missed.** Predicted reg-events in the
+  IVIG/plasma chunks ch12/15/16 = **0/0/1**: Flash-Lite extracts the "Approved/Filed (date)"
+  status cells as program *stages*, never as RegulatoryEvents — in the main table AND the
+  progress rows. So reg-recall **0.41 localizes to the plasma pipeline**, not diffuse weakness.
+- Aggregate (distinct facts): programs P **0.88** R 0.73 (+10 restatement census-artifact FPs),
+  trials 1.00/0.83 (one real miss: APPLAUSE-IgAN prose trial), **reg P0.94 R0.41**, metrics
+  1.00/1.00. Grounding: load-bearing tokens 97-100% PRECISE; region/stage DIRECTIONAL
+  (chunk-granularity caveat); ~0.3% hard wrong-line rate.
+- **Scope (stated, not hidden):** Takeda FULLY CENSUSED (8 chunks / full 34-chunk doc);
+  Novartis reg census **slice-bounded** to the 12 extracted chunks (a full Novartis reg
+  census needs the other 88 chunks extracted).
+- **`judge.py` deferred** — an optional fuzzy-band (0.80-0.90) tie-breaker, not a baseline gate.
 
 ### Committed
 - `2ff9c9f` **golden label schema + loader** (`src/evals/labels.py`) — key-agnostic
@@ -47,7 +62,17 @@ before batch labeling.
 - **Asset clustering:** Option A (simple merge-on-any-shared-identifier) for v1; over-merge
   measured later (LEARNINGS 2026-06-10).
 
-### Next (deferred, gated)
+### Baseline deliverable — DONE
+- `src/evals/run.py` (`python -m src.evals.run`) loads each artifact + golden, scores, grounds,
+  and writes pinned `report.json` + `report.md` to gitignored `data/eval/reports/`. Pins
+  extraction_model / prompt_version / judge_model(null) / git_sha / golden_schema_version.
+  Emits the DECOMPOSED numbers (FP subcategories clean/KI/IV/restatement broken out; reg-events
+  at both grains + plasma line; asset recall, precision withheld; grounding; scope statement).
+
+### Next — Phase 3 (separate design conversation; NOT started)
+- **Phase 3: FAISS + `rank-bm25` hybrid retrieval** over the extracted corpus, with retrieval
+  evals (precision@k / recall@k) + groundedness, per `ARCHITECTURE.md` build order. A fresh
+  design phase with its own handoff — do not begin without a Phase-3 kickoff.
 - **`grounding.py` — DONE** (commit `1849a1d`; full-run over 307 facts reviewed). Provenance of
   load-bearing tokens is strong (asset 98% / action 100% / value 100% / indication 97%); region
   62% (11% inferred) + stage 53% (37% of failures are bare-number map-gap) are DIRECTIONAL with

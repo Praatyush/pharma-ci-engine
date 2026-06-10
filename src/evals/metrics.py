@@ -141,6 +141,7 @@ class TypeScore:
     fn: int = 0
     key_incomplete: int = 0
     indication_verbose: int = 0
+    restatement: int = 0
     items: list[InspectItem] = field(default_factory=list)
 
     @property
@@ -212,6 +213,7 @@ def score_document(golden: GoldenDocument, result: Any, source_lines: list[str])
         out = match_lists(pin, gin, t, pidx, gidx)
         ts.tp, ts.fp, ts.fn = len(out.matched), len(out.false_positives), len(out.misses)
         ts.key_incomplete, ts.indication_verbose = len(out.key_incomplete), len(out.indication_verbose)
+        ts.restatement = len(out.restatement)
 
         for g in out.misses:
             ln, snip = _locate(source_lines, g_prov.get(id(g), (1, 1)), _g_keywords(t, g))
@@ -226,6 +228,10 @@ def score_document(golden: GoldenDocument, result: Any, source_lines: list[str])
             ts.items.append(InspectItem("indication_verbose", t, _summary(t, p, False),
                                         tuple(p.source_ref.line_range), p.source_ref.snippet[:160],
                                         detail="right disease + extra qualifiers (no schema population/setting field)"))
+        for p in out.restatement:
+            ts.items.append(InspectItem("restatement", t, _summary(t, p, False),
+                                        tuple(p.source_ref.line_range), p.source_ref.snippet[:160],
+                                        detail="cross-chunk duplicate of a captured fact (inconsistent region) — census artifact"))
         for p, g in out.matched:
             for diff in _attribute_errors(t, p, g, golden.reporting_period):
                 ts.items.append(InspectItem("attribute_error", t, _summary(t, g, True),
@@ -332,14 +338,18 @@ def render_markdown(reports: list[dict[str, Any]]) -> str:
         for t, ts in rep["scores"].items():
             agg[t].tp += ts.tp; agg[t].fp += ts.fp; agg[t].fn += ts.fn
             agg[t].key_incomplete += ts.key_incomplete; agg[t].indication_verbose += ts.indication_verbose
+            agg[t].restatement += ts.restatement
 
     out.append("## Aggregate (all labeled chunks)")
-    out.append("| type | TP | FP | FN | KI | IV | P | R | F1 |")
-    out.append("|---|--:|--:|--:|--:|--:|--:|--:|--:|")
+    out.append("> P/R/F1 are on DISTINCT facts: FP excludes key_incomplete (KI), indication_verbose")
+    out.append("> (IV), and restatement (RST) — each reported as its own column, not a clean FP.")
+    out.append("")
+    out.append("| type | TP | FP | FN | KI | IV | RST | P | R | F1 |")
+    out.append("|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|")
     for t in _FACT_TYPES:
         s = agg[t]
         out.append(f"| {t} | {s.tp} | {s.fp} | {s.fn} | {s.key_incomplete} | {s.indication_verbose} | "
-                   f"{s.precision:.2f} | {s.recall:.2f} | {s.f1:.2f} |")
+                   f"{s.restatement} | {s.precision:.2f} | {s.recall:.2f} | {s.f1:.2f} |")
     out.append("")
 
     for rep in reports:

@@ -1,5 +1,19 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-10 — restatement FP subcategory: cross-chunk duplicates of captured facts
+
+The third "not-a-clean-FP" subcategory (after `key_incomplete` and `indication_verbose`) — the
+FP-decomposition discipline applied once more. Because the reg census labels restatement chunks
+(Takeda progress rows 14-16 restate the main table 8-12), the model's cross-chunk duplicate
+extractions with **inconsistent regions** (`tak-279 HS` = `Global` in one chunk, region-`-` in
+another) don't collapse, and the extras land as FP. `matching._duplicates_matched` reclassifies
+an FP that duplicates an already-MATCHED fact (same asset + collapsed-stage + compatible/contained
+indication; region differs) into a `restatement` subcategory: excluded from clean FP so
+**precision-on-distinct-facts** is reported cleanly (programs 0.78 raw → **0.88** distinct + 10
+restatement), but **NOT** merged away in collapse — merging would erase the real
+model-consistency finding. It is BOTH a genuine signal AND a census-composition artifact:
+decompose-and-report, never merge-away.
+
 ## 2026-06-10 — indication_verbose: classify model over-specification, don't match it
 
 **What:** The model writes a program's indication as the disease PLUS population/setting

@@ -136,6 +136,21 @@ def test_narrowing_qualifier_is_visible_but_not_a_match():
     assert not out.matched and len(out.misses) == 1  # recall NOT inflated either way
 
 
+def test_restatement_duplicate_of_captured_fact():
+    # same program captured cleanly in one chunk (TP) and restated with an inconsistent region:
+    # the duplicate is `restatement`, not a clean FP, and recall is untouched.
+    pidx = M.build_asset_index([_asset("tak-279", development_codes=["TAK-279"])])
+    gidx = M.build_golden_asset_index([GoldenAsset(identifiers=["TAK-279"])])
+    predicted = [
+        _program("tak-279", "Vitiligo", "Global", "P2"),  # restatement (region inconsistent)
+        _program("tak-279", "Vitiligo", "other", "P2"),   # one of these matches the region-null golden
+    ]
+    golden = [GoldenProgram(asset="TAK-279", indication="Vitiligo", region=None, stage="P2b")]
+    out = M.match_lists(predicted, golden, "programs", pidx, gidx)
+    assert len(out.matched) == 1 and not out.misses
+    assert len(out.restatement) == 1 and not out.false_positives
+
+
 def test_key_incomplete_separated_from_false_positive():
     # A predicted reg-event with indication='not specified' is under-specified (key-incomplete),
     # NOT a clean false positive; the golden it under-specifies stays a miss.

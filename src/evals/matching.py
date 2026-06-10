@@ -336,15 +336,40 @@ def _matches_sans_indication(p: Any, g: Any, t: str, pidx: AssetIndex, gidx: Ass
     return False
 
 
+def _duplicates_matched(p: Any, matched: list[tuple[Any, Any]], t: str,
+                        pidx: AssetIndex, gidx: AssetIndex) -> bool:
+    """True if p restates a fact already captured as a TP (differs only in a non-key dim).
+
+    Cross-chunk restatement-inconsistency: the model extracts the same fact in the main table and
+    a progress chunk with an inconsistent region (or verbose indication), so it doesn't collapse
+    and the extra lands as an FP. A real model-consistency signal AND a census-composition artifact
+    (labeling restatement chunks) — broken out so precision-on-distinct-facts is reported cleanly,
+    NOT merged away (which would erase the finding).
+    """
+    if t not in ("programs", "regulatory_events"):
+        return False
+    for _, gg in matched:
+        if not _assets_overlap(pidx.cluster_slugs(p.asset_id), gidx.cluster_slugs(slug(gg.asset))):
+            continue
+        if t == "programs" and collapse_phase(p.stage) != collapse_phase(gg.stage):
+            continue
+        if t == "regulatory_events" and p.action != gg.action:
+            continue
+        if fuzzy_match(p.indication, gg.indication) or _indication_subset(gg.indication, p.indication):
+            return True
+    return False
+
+
 @dataclass
 class MatchOutcome:
     """Alignment of collapsed predictions to golden labels for one entity type."""
 
     matched: list[tuple[Any, Any]]  # (predicted, golden)
-    false_positives: list[Any]      # predicted with no golden match (a clean, keyable fact)
+    false_positives: list[Any]      # predicted with no golden match (a clean, keyable, distinct fact)
     misses: list[Any]               # golden with no predicted match
     key_incomplete: list[Any] = field(default_factory=list)  # predicted, unmatched, null-sentinel key
     indication_verbose: list[Any] = field(default_factory=list)  # predicted: right disease + extra qualifiers
+    restatement: list[Any] = field(default_factory=list)  # predicted: duplicate of a captured fact, non-key variation
 
 
 def match_lists(
@@ -378,10 +403,11 @@ def match_lists(
     matched_golden = {id(g) for _, g in matched}
     misses = [g for g in golden if id(g) not in matched_golden]
 
-    # Verbose-indication pass: a clean FP that matches a still-missed golden on every key field
-    # except indication, where the golden disease ⊆ the predicted indication + qualifiers, is
-    # reclassified out of clean FP (the golden STAYS a miss — never an inflated TP).
-    false_positives, indication_verbose = [], []
+    # Reclassify clean FPs (in priority order), each broken out so precision-on-distinct-facts is
+    # reportable: (1) indication_verbose — pairs with a still-MISSED golden, golden disease ⊆
+    # predicted + qualifiers; (2) restatement — duplicates an already-MATCHED fact (non-key
+    # variation). The golden side is untouched in both (recall never inflated).
+    false_positives, indication_verbose, restatement = [], [], []
     for p in clean:
         p_ind = getattr(p, "indication", None)
         if p_ind and any(
@@ -389,6 +415,8 @@ def match_lists(
             for g in misses
         ):
             indication_verbose.append(p)
+        elif _duplicates_matched(p, matched, entity_type, pidx, gidx):
+            restatement.append(p)
         else:
             false_positives.append(p)
-    return MatchOutcome(matched, false_positives, misses, key_incomplete, indication_verbose)
+    return MatchOutcome(matched, false_positives, misses, key_incomplete, indication_verbose, restatement)
