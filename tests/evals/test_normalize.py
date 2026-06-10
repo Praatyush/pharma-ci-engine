@@ -50,6 +50,16 @@ def test_metric_dimension():
     assert N.metric_dimension("country_count") == "count"
 
 
+def test_fold_self_reference_narrow():
+    # Generic self-references fold to the company; product groups + "Total" do not.
+    assert N.fold_self_reference("Company", "Novartis") == "Novartis"
+    assert N.fold_self_reference("the Group", "Novartis") == "Novartis"
+    assert N.fold_self_reference("Novartis", "Novartis") == "Novartis"
+    assert N.fold_self_reference("Total", "Novartis") == "Total"          # aggregation marker, excluded
+    assert N.fold_self_reference("Sandostatin Group", "Novartis") == "Sandostatin Group"
+    assert N.fold_self_reference("Kisqali", "Novartis") == "Kisqali"
+
+
 def test_agency_attribute_pmda_mhlw_fold():
     # Policy (d): PMDA == MHLW for attribute scoring (same JP jurisdiction).
     assert N.agency_attribute_matches("PMDA", "MHLW")

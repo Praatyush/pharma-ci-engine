@@ -61,6 +61,11 @@ collapse-then-scope, and do not sum per-chunk scores (a fact in two labeled chun
 double-count). Asset precision/recall is **document-level** (assets carry no
 `source_ref`). See `docs/LEARNINGS.md` 2026-06-10.
 
+Before matching/collapsing `MarketMetric`s, fold company self-reference subjects to the
+document's `source_company` via `normalize.fold_self_reference` (predicted AND golden) — the
+company-level analog of `period -> reporting_period`. Standalone reg-event recall
+(`from_progress_row=false`) is reported separately from progress-row reg-events.
+
 ## Gotchas
 
 _None yet._

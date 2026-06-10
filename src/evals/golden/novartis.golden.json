@@ -1,0 +1,49 @@
+{
+  "golden_schema_version": "1",
+  "document_id": "q1-2026-interim-financial-report-en",
+  "source_company": "Novartis",
+  "artifact": "q1-2026-interim-financial-report-en.slice.extraction.json",
+  "reporting_period": "Q1 2026",
+  "as_of_date": "2026-03-31",
+  "labeled_chunks": [
+    {
+      "chunk_index": 32,
+      "line_range": [1065, 1127],
+      "note": "Innovation-Review pipeline rows (asset | indication | expected-filing-year | phase). Region not stated -> Global; the phase number is the Program stage. LoT (1L/2L) kept in the indication string so the two ITP programs stay distinct under the (asset,indication,region,stage) key. Named trials VAYHIA (PhIII, did NOT meet primary endpoint -> met=false) and INVEST-HD (PhIII, FPFV only -> no readout, met=null). YTB323 EMA PRIME is standalone prose (from_progress_row=false) -> the hard reg-event case. Net sales = company revenue metric; the Q1 2025 comparison figure is folded (period demoted). Income-statement line items (Other revenues, COGS, gross profit, SG&A) are NOT labeled — outside the MarketMetric enum.",
+      "assets": [
+        {"identifiers": ["ianalumab"]},
+        {"identifiers": ["VHB937"]},
+        {"identifiers": ["Vijoice"]},
+        {"identifiers": ["Votoplam"]},
+        {"identifiers": ["YTB323"]}
+      ],
+      "programs": [
+        {"asset": "ianalumab", "indication": "Systemic lupus erythematosus", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "ianalumab", "indication": "Systemic sclerosis", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"},
+        {"asset": "ianalumab", "indication": "1L immune thrombocytopenia", "region": "Global", "stage": "P3", "line_of_therapy": "1L", "therapeutic_area": "immunology"},
+        {"asset": "ianalumab", "indication": "2L immune thrombocytopenia", "region": "Global", "stage": "P3", "line_of_therapy": "2L", "therapeutic_area": "immunology"},
+        {"asset": "ianalumab", "indication": "Warm autoimmune hemolytic anemia", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "VHB937", "indication": "Alzheimer's disease", "region": "Global", "stage": "P2", "therapeutic_area": "neuroscience"},
+        {"asset": "VHB937", "indication": "Amyotrophic lateral sclerosis", "region": "Global", "stage": "P2", "therapeutic_area": "neuroscience"},
+        {"asset": "Vijoice", "indication": "Lymphatic malformations", "region": "Global", "stage": "P3", "therapeutic_area": "rare_disease"},
+        {"asset": "Votoplam", "indication": "Huntington's disease", "region": "Global", "stage": "P3", "therapeutic_area": "neuroscience"},
+        {"asset": "YTB323", "indication": "Active refractory lupus nephritis", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"},
+        {"asset": "YTB323", "indication": "Active refractory systemic lupus erythematosus", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"},
+        {"asset": "YTB323", "indication": "1L high-risk large B-cell lymphoma", "region": "Global", "stage": "P2", "line_of_therapy": "1L", "therapeutic_area": "oncology"},
+        {"asset": "YTB323", "indication": "Systemic sclerosis", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"},
+        {"asset": "YTB323", "indication": "Myositis", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"},
+        {"asset": "YTB323", "indication": "ANCA associated vasculitis", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"}
+      ],
+      "trials": [
+        {"trial_name": "VAYHIA", "assets": ["ianalumab"], "indication": "Warm autoimmune hemolytic anemia", "phase": "3", "met_primary_endpoint": false, "primary_endpoint": null},
+        {"trial_name": "INVEST-HD", "assets": ["Votoplam"], "indication": "Huntington's disease", "phase": "3", "met_primary_endpoint": null}
+      ],
+      "regulatory_events": [
+        {"asset": "YTB323", "action": "PRIME", "indication": "Myositis", "region": "EU", "agency": "EMA", "date": "April 2026", "from_progress_row": false}
+      ],
+      "market_metrics": [
+        {"subject": "Novartis", "metric": "revenue", "geography": "Global", "value": 13113, "unit": "USD millions", "currency": "USD", "period": "Q1 2026"}
+      ]
+    }
+  ]
+}

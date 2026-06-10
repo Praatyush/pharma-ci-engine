@@ -19,9 +19,12 @@ before batch labeling.
   with `extractor._slug`), value-scale `to_base`/`values_match` (2% rel-tol); asset
   identifier-overlap union-find, per-type collapse keys, `collapse()`, and the
   predicted↔golden match predicates + `match_lists`.
-- **This commit:** Takeda **golden chunk 14** labeled + scored end-to-end; labeling policy
-  adopted (see `src/evals/CLAUDE.md`); `from_progress_row` added to golden reg-events;
-  agency attribute rule pinned (PMDA==MHLW).
+- `365722e` Takeda **golden chunk 14** labeled + scored end-to-end; labeling policy adopted
+  (`src/evals/CLAUDE.md`); `from_progress_row` on golden reg-events; agency rule (PMDA==MHLW).
+- **This commit:** Novartis **golden chunk 32** (trials VAYHIA-unmet/INVEST-HD, programs,
+  standalone PRIME reg-event, net-sales metric) scored end-to-end; **company self-reference
+  fix** (`normalize.fold_self_reference`: "Company"->source_company, excludes "Total") — the
+  chunk-32 metric flips to 1 TP/0 FP/0 FN.
 
 ### Locked this stage
 - **Approved match keys:** Program `(asset, indication~, region, stage)`; Trial
@@ -37,9 +40,13 @@ before batch labeling.
   measured later (LEARNINGS 2026-06-10).
 
 ### Next
-- One more single-chunk checkpoint (Novartis trial/metric path), then batch-label the
-  remaining Takeda reg/program-dense chunks + Novartis slice, then build `metrics.py`
-  (P/R/F1 + grounding + report) and the runner. Optional LLM judge last.
+- **Batch-label toward coverage** of the open questions (not volume): standalone reg-events
+  (`from_progress_row=false`, prose designations — Novartis Innovation Review chunks 28-30);
+  the IVIG over-merge cluster (Takeda **chunk 12**, where TAK-339/771/880/961 + brands
+  concentrate); trial met/unmet readouts (Novartis 30 RemIND-met, 32 VAYHIA-unmet). Corpus
+  has **zero NCT IDs**, so the trial nct_id key-tier is untested by real data.
+- Then build `metrics.py` (P/R/F1; standalone reg-event recall reported separately; miss/FP/
+  attr-error lists must carry source `line_range`+snippet) + grounding + runner. Judge last.
 
 ---
 

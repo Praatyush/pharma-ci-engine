@@ -137,6 +137,32 @@ def fuzzy_match(a: str | None, b: str | None, threshold: float = FUZZY_MATCH) ->
 
 
 # --------------------------------------------------------------------------- #
+# Company self-reference (MarketMetric.subject normalization)
+# --------------------------------------------------------------------------- #
+# An income statement does not repeat the company name per line, so Flash-Lite
+# labels the company's own consolidated figures with a generic subject ("Company").
+# Fold those to the document's source_company before comparing MarketMetric.subject
+# (the company-level analog of period -> reporting_period). EXACT canonical match
+# only, and deliberately EXCLUDING "Total": "Total" is an aggregation marker that
+# can denote a segment/summed subject, not the company — folding it would risk the
+# weak-alias-chaining failure class seen in the asset over-merge. (Confirmed against
+# the artifact: "Total" never appears as a subject; product groups like
+# "Sandostatin Group" do, and must NOT fold.)
+def fold_self_reference(subject: str | None, source_company: str) -> str | None:
+    """Map a generic company self-reference subject to ``source_company`` (exact match)."""
+    if not subject:
+        return subject
+    self_refs = {
+        "company",
+        "the company",
+        "the group",
+        canonical_term(source_company),
+        canonical_term(f"{source_company} group"),
+    }
+    return source_company if canonical_term(subject) in self_refs else subject
+
+
+# --------------------------------------------------------------------------- #
 # Agency attribute equivalence (RegulatoryEvent.agency is a scored attribute)
 # --------------------------------------------------------------------------- #
 # Decision (docs/HANDOFF.md): PMDA and MHLW fold to a MATCH — both are the Japanese

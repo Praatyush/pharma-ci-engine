@@ -1,5 +1,30 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-10 — Own-company metrics get a generic subject ("Company"), not the name
+
+**What:** On Novartis chunk 32 the net-sales `MarketMetric` matched on value/period/geography
+but FAILED on the `subject` key — predicted `subject="Company"`, golden `"Novartis"` — scoring
+0 TP / 1 FP / 1 FN despite identical numbers.
+
+**Why:** The consolidated income statement does not repeat the company name per line ("Net
+sales to third parties … 13 113"), so Flash-Lite labels the company's own consolidated figures
+with a generic subject ("Company"). This is the company-level analog of the period demotion: a
+discriminator stated once globally, not per row.
+
+**Fix:** `normalize.fold_self_reference(subject, source_company)` maps generic self-references
+(`Company` / `the Company` / `the Group` / `<company>` / `<company> group`) to the document's
+`source_company` by **exact canonical match**, applied to predicted AND golden subjects before
+collapse/match. After the fix chunk-32's metric flips to **1 TP / 0 FP / 0 FN**. Deliberately
+**excludes "Total"** — an aggregation marker that can denote a segment/summed subject, not the
+company; folding it would risk the weak-alias chaining seen in the asset over-merge. (Confirmed
+against the artifact: "Total" never appears as a subject; product groups like "Sandostatin
+Group" do and must NOT fold.) `metrics.py` must apply this fold — the matching predicate has no
+document context.
+
+**Also (corpus fact):** there are **zero NCT IDs** in either source document (0 predicted
+trials carry one) — trials are acronym-named. The trial-key `nct_id` tier is unexercised by
+real data (unit-tests only); matching falls through to `trial_name` then assets+indication+phase.
+
 ## 2026-06-10 — Scope predictions to labeled chunks BEFORE collapsing (not after)
 
 **What:** First end-to-end scoring of one labeled chunk (Takeda chunk 14) produced **false
