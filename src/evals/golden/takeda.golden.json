@@ -184,6 +184,83 @@
         {"asset": "TAK-577", "action": "approval", "indication": "von Willebrand disease", "region": "EU", "agency": "EMA", "date": "Dec 2025", "from_progress_row": true},
         {"asset": "TAK-660", "action": "filed", "indication": "Hemophilia A", "region": "CN", "agency": "NMPA", "date": "July 2025", "from_progress_row": true}
       ]
+    },
+    {
+      "chunk_index": 15,
+      "line_range": [734, 806],
+      "note": "Section II 'Recent Pipeline Progress' (Q3/Q2 FY2025 updates) — progress-row restatements, from_progress_row=true. Most facts DEDUP with the main-table chunks 8-12 via the union; carries the plasma codes (TAK-339/961). region '-' -> null; indication = disease only. Reg-events here test the plasma thesis: Flash-Lite extracted 0 reg-events from this chunk (per-chunk), same as ch12's 0/7.",
+      "assets": [
+        {"identifiers": ["TAK-921 / IBI343", "TAK-921", "IBI343"]},
+        {"identifiers": ["TAK-928 / IBI363", "TAK-928", "IBI363"]}
+      ],
+      "programs": [
+        {"asset": "TAK-121", "indication": "Polycythemia vera", "region": "US", "stage": "filed"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "US", "stage": "filed"},
+        {"asset": "TAK-853", "indication": "Platinum-resistant ovarian cancer", "region": "JP", "stage": "filed"},
+        {"asset": "TAK-339", "indication": "Secondary Immunodeficiencies", "region": "US", "stage": "P3"},
+        {"asset": "TAK-755", "indication": "Acute ischemic stroke", "region": null, "stage": "P2"},
+        {"asset": "TAK-279", "indication": "Hidradenitis suppurativa", "region": null, "stage": "P2a"},
+        {"asset": "TAK-577", "indication": "von Willebrand disease", "region": "EU", "stage": "approved"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "CN", "stage": "filed"},
+        {"asset": "TAK-961", "indication": "Autoimmune Encephalitis", "region": "JP", "stage": "filed"},
+        {"asset": "TAK-339", "indication": "Autoimmune Encephalitis", "region": "JP", "stage": "filed"},
+        {"asset": "TAK-279", "indication": "Pediatric psoriasis", "region": "Global", "stage": "P3"},
+        {"asset": "TAK-921", "indication": "3L Gastric Cancer", "region": "JP", "stage": "P3", "line_of_therapy": "3L"},
+        {"asset": "TAK-921", "indication": "3L Gastric Cancer", "region": "CN", "stage": "P3", "line_of_therapy": "3L"},
+        {"asset": "TAK-928", "indication": "2L squamous Non-Small Cell Lung Cancer", "region": "Global", "stage": "P3", "line_of_therapy": "2L"},
+        {"asset": "TAK-279", "indication": "Vitiligo", "region": null, "stage": "P2b"},
+        {"asset": "TAK-928", "indication": "Solid Tumors", "region": null, "stage": "P2"},
+        {"asset": "TAK-921", "indication": "Solid Tumors", "region": null, "stage": "P1"},
+        {"asset": "TAK-188", "indication": "Solid Tumors", "region": null, "stage": "P1"},
+        {"asset": "TAK-781", "indication": "Primary sclerosing cholangitis", "region": null, "stage": "P1"},
+        {"asset": "TAK-577", "indication": "von Willebrand disease", "region": "US", "stage": "approved"},
+        {"asset": "TAK-339", "indication": "Multiple Indications", "region": "JP", "stage": "approved"},
+        {"asset": "TAK-660", "indication": "Hemophilia A", "region": "CN", "stage": "filed"}
+      ],
+      "regulatory_events": [
+        {"asset": "TAK-121", "action": "filed", "indication": "Polycythemia vera", "region": "US", "agency": "FDA", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-861", "action": "filed", "indication": "Narcolepsy type 1", "region": "US", "agency": "FDA", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-853", "action": "filed", "indication": "Platinum-resistant ovarian cancer", "region": "JP", "agency": "PMDA", "date": "Jan 2026", "from_progress_row": true},
+        {"asset": "TAK-577", "action": "approval", "indication": "von Willebrand disease", "region": "EU", "agency": "EMA", "date": "Dec 2025", "from_progress_row": true},
+        {"asset": "TAK-861", "action": "filed", "indication": "Narcolepsy type 1", "region": "CN", "agency": "NMPA", "date": "Jan 2026", "from_progress_row": true},
+        {"asset": "TAK-961", "action": "filed", "indication": "Autoimmune Encephalitis", "region": "JP", "agency": "PMDA", "date": "Oct 2025", "from_progress_row": true},
+        {"asset": "TAK-339", "action": "filed", "indication": "Autoimmune Encephalitis", "region": "JP", "agency": "PMDA", "date": "Oct 2025", "from_progress_row": true},
+        {"asset": "TAK-577", "action": "approval", "indication": "von Willebrand disease", "region": "US", "agency": "FDA", "date": "Sept 2025", "from_progress_row": true},
+        {"asset": "TAK-339", "action": "approval", "indication": "Multiple Indications", "region": "JP", "agency": "MHLW", "date": "July 2025", "from_progress_row": true},
+        {"asset": "TAK-660", "action": "filed", "indication": "Hemophilia A", "region": "CN", "agency": "NMPA", "date": "July 2025", "from_progress_row": true}
+      ]
+    },
+    {
+      "chunk_index": 16,
+      "line_range": [807, 860],
+      "note": "Section II progress (Q1 FY2025 updates) — from_progress_row=true; carries plasma codes TAK-771/880 (the ch12 0/7 set). Mostly dedups with 8-12. NEW: TAK-577 vWD JP Filed (June 2025) [distinct action from the ch11 approval]; asset TAK-411. The TAK-755 AIS Ph2 trial footnote (line 853) is where the model cited that trial -> resolves the transient trial FN.",
+      "assets": [
+        {"identifiers": ["TAK-411"]}
+      ],
+      "programs": [
+        {"asset": "TAK-079", "indication": "Immunoglobulin A nephropathy", "region": "Global", "stage": "P3"},
+        {"asset": "TAK-771", "indication": "Chronic inflammatory demyelinating polyradiculoneuropathy and multifocal motor neuropathy", "region": "JP", "stage": "approved"},
+        {"asset": "TAK-880", "indication": "Primary Immunodeficiencies", "region": "US", "stage": "approved"},
+        {"asset": "SGN-35", "indication": "Front line Hodgkin's lymphoma", "region": "EU", "stage": "approved"},
+        {"asset": "TAK-880", "indication": "Primary Immunodeficiencies", "region": "EU", "stage": "approved"},
+        {"asset": "TAK-577", "indication": "von Willebrand disease", "region": "JP", "stage": "filed"},
+        {"asset": "TAK-226", "indication": "2L anemia-associated Myelodysplastic Syndrome", "region": "US", "stage": "P3", "line_of_therapy": "2L"},
+        {"asset": "TAK-226", "indication": "2L anemia-associated Myelodysplastic Syndrome", "region": "EU", "stage": "P3", "line_of_therapy": "2L"},
+        {"asset": "TAK-360", "indication": "Narcolepsy type 2", "region": null, "stage": "P2"},
+        {"asset": "TAK-411", "indication": "Chronic inflammatory demyelinating polyradiculoneuropathy", "region": null, "stage": "P2"},
+        {"asset": "TAK-168", "indication": "Solid Tumors", "region": null, "stage": "P1"}
+      ],
+      "trials": [
+        {"assets": ["TAK-755"], "indication": "Acute ischemic stroke", "phase": "2", "met_primary_endpoint": null}
+      ],
+      "regulatory_events": [
+        {"asset": "TAK-660", "action": "filed", "indication": "Hemophilia A", "region": "CN", "agency": "NMPA", "date": "July 2025", "from_progress_row": true},
+        {"asset": "TAK-771", "action": "approval", "indication": "Chronic inflammatory demyelinating polyradiculoneuropathy and multifocal motor neuropathy", "region": "JP", "agency": "MHLW", "date": "June 2025", "from_progress_row": true},
+        {"asset": "TAK-880", "action": "approval", "indication": "Primary Immunodeficiencies", "region": "US", "agency": "FDA", "date": "June 2025", "from_progress_row": true},
+        {"asset": "SGN-35", "action": "approval", "indication": "Front line Hodgkin's lymphoma", "region": "EU", "agency": "EMA", "date": "June 2025", "from_progress_row": true},
+        {"asset": "TAK-880", "action": "approval", "indication": "Primary Immunodeficiencies", "region": "EU", "agency": "EMA", "date": "May 2025", "from_progress_row": true},
+        {"asset": "TAK-577", "action": "filed", "indication": "von Willebrand disease", "region": "JP", "agency": "PMDA", "date": "June 2025", "from_progress_row": true}
+      ]
     }
   ]
 }

@@ -53,12 +53,20 @@ before batch labeling.
   62% (11% inferred) + stage 53% (37% of failures are bare-number map-gap) are DIRECTIONAL with
   the chunk-granularity caveat; ~0.3% hard wrong-line rate. See LEARNINGS 2026-06-10. No
   row-level fix (deliberate).
-- **Census labeling — IN PROGRESS (batch mode).** The harness is proven (metrics on 5 chunks +
-  grounding on 307 facts), so single-chunk checkpoints are retired; labeling in batches of ~3-4,
-  committing each batch's golden before the next. Pruned boilerplate (Takeda 0,1; Novartis
-  78,79,96-98). Order: Takeda pipeline-table chunks 7,8,9,10,11,15,16 (the 0/7 status-cell
-  pattern) first, then Novartis 28 + remaining. Expect reg-recall to FALL as these land —
-  finding strengthening, not regression.
+- **Reg-event census — COMPLETE (12 chunks labeled).** Takeda [8,9,10,11,12,14,15,16] (full
+  doc, fully censused) + Novartis [28,29,30,32] (slice-bounded — only 12 of 100 chunks
+  extracted; Novartis full-doc reg census would need more extraction). Final aggregate:
+  programs P0.78 R0.73, trials P1.00 R0.83, **reg P0.94 R0.41** (Takeda progress-row 9/19;
+  Novartis standalone 7/20; region-collapsed 6/14 + 3/15), metrics 1.00/1.00.
+  - **PLASMA THESIS CONFIRMED from both sides:** predicted reg-events in the IVIG/plasma
+    chunks = ch12 **0**, ch15 **0**, ch16 1 — Flash-Lite extracts the plasma table's
+    approval/filing status cells as program *stages*, never as RegulatoryEvents, in BOTH the
+    main table and the progress rows.
+  - **Trial FN resolved** (transient): the TAK-755 AIS trial matched once ch16 (where the
+    model cited it) entered the union → Takeda trials 1/0.
+  - Program precision (0.78) is partly a census artifact: progress-row chunks (14-16) restate
+    main-table facts, and the model assigns inconsistent regions across chunks, so duplicate
+    extractions don't collapse and register as FP. Reg-event headline unaffected.
 - **Reg-event CENSUS** (stopping criterion as a census, not a sampled threshold): enumerate
   every reg-event-bearing chunk in BOTH docs (candidate list produced; prune Takeda 0,1 +
   Novartis 78,79,96–98 boilerplate). Takeda 7,8,9,10,11,15,16 are the SAME status-cell pattern as

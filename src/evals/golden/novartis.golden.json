@@ -121,6 +121,47 @@
       "regulatory_events": [
         {"asset": "remibrutinib", "action": "filed", "indication": "Chronic inducible urticaria", "region": "US", "agency": "FDA", "date": "Q4 2025", "from_progress_row": false}
       ]
+    },
+    {
+      "chunk_index": 28,
+      "line_range": [956, 983],
+      "note": "Innovation Review: Q1 approvals + completed submissions / awaiting decisions (standalone prose, from_progress_row=false). Overlaps ch29 at 979-983 (VAY736, Leqvio) -> dedups in the union. NEW vs ch29: Cosentyx (HS approval + Polymyalgia rheumatica US/EU/JP submissions + HS EU submission), Fabhalta (JP submission + FDA priority review + APPLAUSE-IgAN PhIII trial). indication = disease only.",
+      "assets": [
+        {"identifiers": ["Cosentyx", "secukinumab"]},
+        {"identifiers": ["Leqvio", "inclisiran"]},
+        {"identifiers": ["Zolgensma", "OAV101"]},
+        {"identifiers": ["Fabhalta"]},
+        {"identifiers": ["VAY736", "ianalumab"]}
+      ],
+      "programs": [
+        {"asset": "Cosentyx", "indication": "Hidradenitis suppurativa", "region": "US", "stage": "approved", "therapeutic_area": "immunology"},
+        {"asset": "Cosentyx", "indication": "Polymyalgia rheumatica", "region": "Global", "stage": "filed", "therapeutic_area": "immunology"},
+        {"asset": "Leqvio", "indication": "Hypercholesterolaemia, pediatrics", "region": "US", "stage": "approved", "therapeutic_area": "cardiometabolic"},
+        {"asset": "Zolgensma", "indication": "Spinal muscular atrophy", "region": "JP", "stage": "approved", "therapeutic_area": "neuroscience"},
+        {"asset": "Fabhalta", "indication": "IgA nephropathy", "region": "Global", "stage": "filed", "therapeutic_area": "immunology"},
+        {"asset": "VAY736", "indication": "Sjogren's disease", "region": "Global", "stage": "filed", "therapeutic_area": "immunology"}
+      ],
+      "trials": [
+        {"trial_name": "APPLAUSE-IgAN", "assets": ["Fabhalta"], "indication": "IgA nephropathy", "phase": "3", "met_primary_endpoint": null}
+      ],
+      "regulatory_events": [
+        {"asset": "Cosentyx", "action": "approval", "indication": "Hidradenitis suppurativa", "region": "US", "agency": "FDA", "date": "Q1 2026", "from_progress_row": false},
+        {"asset": "Cosentyx", "action": "filed", "indication": "Polymyalgia rheumatica", "region": "US", "agency": "FDA", "from_progress_row": false},
+        {"asset": "Cosentyx", "action": "filed", "indication": "Polymyalgia rheumatica", "region": "EU", "agency": "EMA", "from_progress_row": false},
+        {"asset": "Cosentyx", "action": "filed", "indication": "Polymyalgia rheumatica", "region": "JP", "agency": "PMDA", "from_progress_row": false},
+        {"asset": "Cosentyx", "action": "filed", "indication": "Hidradenitis suppurativa", "region": "EU", "agency": "EMA", "from_progress_row": false},
+        {"asset": "Leqvio", "action": "approval", "indication": "Hypercholesterolaemia, pediatrics", "region": "US", "agency": "FDA", "date": "Q3 2025", "from_progress_row": false},
+        {"asset": "Zolgensma", "action": "approval", "indication": "Spinal muscular atrophy", "region": "JP", "agency": "MHLW", "from_progress_row": false},
+        {"asset": "Fabhalta", "action": "filed", "indication": "IgA nephropathy", "region": "JP", "agency": "PMDA", "from_progress_row": false},
+        {"asset": "Fabhalta", "action": "priority_review", "indication": "IgA nephropathy", "region": "US", "agency": "FDA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "filed", "indication": "Sjogren's disease", "region": "US", "agency": "FDA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "filed", "indication": "Sjogren's disease", "region": "EU", "agency": "EMA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "filed", "indication": "Sjogren's disease", "region": "JP", "agency": "PMDA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "filed", "indication": "Sjogren's disease", "region": "CN", "agency": "NMPA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "breakthrough", "indication": "Sjogren's disease", "region": "US", "agency": "FDA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "priority_review", "indication": "Sjogren's disease", "region": "US", "agency": "FDA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "orphan", "indication": "Sjogren's disease", "region": "JP", "agency": "PMDA", "from_progress_row": false}
+      ]
     }
   ]
 }
