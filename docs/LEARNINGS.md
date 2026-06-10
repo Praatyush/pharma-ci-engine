@@ -1,5 +1,29 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-10 — Asset clustering can transitively over-merge on shared weak identifiers
+
+**What:** The eval duplicate-collapse clusters assets by **shared-identifier union-find**
+(the same molecule appears as `ianalumab` and `VAY736`, etc.). On Takeda this chained
+**9 distinct IVIG programs into one cluster** (`10-ivig, deqsiga, gammagard-liquid,
+glovenin-i, tak-339, tak-880, tak-961, …`).
+
+**Why:** Extraction **over-applied non-unique identifiers across distinct dev codes** — it
+put brand `GAMMAGARD LIQUID` on *both* `TAK-880` and `TAK-339`, and alias `10% IVIG` on
+`TAK-339` / `TAK-880` / `TAK-961`. Union-find then transitively merges any assets sharing a
+slug, so these weak shared strings chain otherwise-distinct molecules into one mega-cluster.
+It is therefore *both* an extraction-quality issue (shared brand/alias reused) and an
+amplification by the merge-on-any-shared-identifier rule. The correct merges still work
+(`Adzynma ≡ ADAMTS13 ≡ TAK-755`, `Fabhalta ≡ iptacopan ≡ LNP023`, `Leqvio ≡ inclisiran`).
+
+**Fix / decision (v1):** **Keep the simple merge-on-any-shared-identifier rule** and let the
+golden set **quantify the impact before adding mitigation**. The over-merge is localized to
+Takeda's IVIG codes, and the considered mitigations carry their own under-merge risks:
+*Option B* (bridge only on strong ids — generic_name + dev codes) would under-merge
+brand-only references (a "Fabhalta"-only mention would not join the iptacopan cluster);
+*Option C* (refuse to merge two clusters that each already hold a distinct dev code) adds
+clustering logic. Both **deferred** pending golden-set evidence. Revisit if golden shows
+asset precision/recall is materially distorted by chained clusters.
+
 ## 2026-06-09 — Extraction output must be persisted (the prior run was lost)
 
 **What:** The "34/34 Flash-Lite run completed" recorded in HANDOFF left **no artifact on
