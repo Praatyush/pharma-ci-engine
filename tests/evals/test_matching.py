@@ -87,6 +87,32 @@ def test_match_lists_aligns_predicted_to_golden():
     assert len(out.misses) == 1
 
 
+def test_collapse_phase():
+    assert M.collapse_phase("P2b") == "P2" and M.collapse_phase("P2a") == "P2"
+    assert M.collapse_phase("3a") == "3" and M.collapse_phase("2b") == "2"
+    assert M.collapse_phase("P1/2") == "P1/2"  # not a sub-phase letter
+    assert M.collapse_phase("preclinical") == "preclinical"
+
+
+def test_subphase_collapse_lets_p2_match_p2b():
+    pidx = M.build_asset_index([_asset("tak-279", development_codes=["TAK-279"])])
+    gidx = M.build_golden_asset_index([GoldenAsset(identifiers=["TAK-279"])])
+    predicted = [_program("tak-279", "Crohn's disease", "Global", "P2")]   # model: coarse P2
+    golden = [GoldenProgram(asset="TAK-279", indication="Crohn's disease", region="Global", stage="P2b")]
+    out = M.match_lists(predicted, golden, "programs", pidx, gidx)
+    assert len(out.matched) == 1 and not out.misses
+
+
+def test_region_indeterminate_golden_matches_any_region():
+    pidx = M.build_asset_index([_asset("tak-279", development_codes=["TAK-279"])])
+    gidx = M.build_golden_asset_index([GoldenAsset(identifiers=["TAK-279"])])
+    # model emitted region='other' for a '-' row; golden region=null -> region dropped from key.
+    predicted = [_program("tak-279", "Vitiligo", "other", "P2")]
+    golden = [GoldenProgram(asset="TAK-279", indication="Vitiligo", region=None, stage="P2b")]
+    out = M.match_lists(predicted, golden, "programs", pidx, gidx)
+    assert len(out.matched) == 1 and not out.misses and not out.false_positives
+
+
 def test_key_incomplete_separated_from_false_positive():
     # A predicted reg-event with indication='not specified' is under-specified (key-incomplete),
     # NOT a clean false positive; the golden it under-specifies stays a miss.

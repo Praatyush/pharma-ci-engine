@@ -30,6 +30,7 @@ from .matching import (
     _collapse_by_key,
     build_asset_index,
     build_golden_asset_index,
+    collapse_phase,
     is_key_incomplete,
     match_lists,
     metric_key,
@@ -54,7 +55,7 @@ _FACT_TYPES = ("programs", "trials", "regulatory_events", "market_metrics")
 # Golden-side collapse keys (mirror the predicted keys in matching, on Golden* fields)
 # --------------------------------------------------------------------------- #
 def _g_program_key(g: Any, idx: AssetIndex) -> Any:
-    return (idx.resolve(slug(g.asset)), canonical_term(g.indication), g.region, g.stage)
+    return (idx.resolve(slug(g.asset)), canonical_term(g.indication), g.region, collapse_phase(g.stage))
 
 
 def _g_regevent_key(g: Any, idx: AssetIndex) -> Any:
@@ -67,7 +68,7 @@ def _g_trial_key(g: Any, idx: AssetIndex) -> Any:
     if g.trial_name:
         return ("name", canonical_term(g.trial_name))
     return ("triple", frozenset(idx.resolve(slug(a)) for a in g.assets),
-            canonical_term(g.indication), g.phase)
+            canonical_term(g.indication), collapse_phase(g.phase))
 
 
 def _g_metric_key(g: Any, idx: AssetIndex | None = None) -> Any:

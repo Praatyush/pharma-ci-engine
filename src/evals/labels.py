@@ -61,12 +61,18 @@ class GoldenAsset(_Base):
 
 
 class GoldenProgram(_Base):
-    """asset x indication x region x stage. Key: (asset, indication, region, stage)."""
+    """asset x indication x region x stage. Key: (asset, indication, region, stage).
+
+    ``region=null`` means **region-indeterminate** — the source states no region (a "-" in the
+    table). The program is still scored on (asset, indication, stage); region is dropped from its
+    key (never manufactured). Same discipline as the chunk-29 region-inferred exclusions; the
+    predicted-side mirror is grounding's `inferred` category.
+    """
 
     asset: str = Field(..., description="Any one identifier of the asset (resolved via its identifier set).")
     indication: str = Field(..., description="Key (fuzzy-matched, open free-text).")
-    region: Region = Field(..., description="Key (exact closed enum).")
-    stage: ProgramStage = Field(..., description="Key (exact closed enum).")
+    region: Region | None = Field(..., description="Key (exact closed enum); null = region-indeterminate (dropped from key).")
+    stage: ProgramStage = Field(..., description="Key; sub-phase collapsed (P2a/P2b->P2) in matching.")
     therapeutic_area: str | None = Field(None, description="Scored attribute (open free-text).")
     line_of_therapy: str | None = Field(None, description="Scored attribute.")
 

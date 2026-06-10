@@ -81,13 +81,13 @@
         {"asset": "TAK-279", "indication": "Psoriasis", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
         {"asset": "TAK-279", "indication": "Pediatric psoriasis", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
         {"asset": "TAK-279", "indication": "Psoriatic arthritis", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
-        {"asset": "TAK-279", "indication": "Crohn's disease", "region": "Global", "stage": "P2b", "therapeutic_area": "gastroenterology"},
-        {"asset": "TAK-279", "indication": "Ulcerative colitis", "region": "Global", "stage": "P2b", "therapeutic_area": "gastroenterology"},
-        {"asset": "TAK-279", "indication": "Vitiligo", "region": "Global", "stage": "P2b", "therapeutic_area": "immunology"},
-        {"asset": "TAK-279", "indication": "Hidradenitis suppurativa", "region": "Global", "stage": "P2a", "therapeutic_area": "immunology"},
+        {"asset": "TAK-279", "indication": "Crohn's disease", "region": null, "stage": "P2b", "therapeutic_area": "gastroenterology"},
+        {"asset": "TAK-279", "indication": "Ulcerative colitis", "region": null, "stage": "P2b", "therapeutic_area": "gastroenterology"},
+        {"asset": "TAK-279", "indication": "Vitiligo", "region": null, "stage": "P2b", "therapeutic_area": "immunology"},
+        {"asset": "TAK-279", "indication": "Hidradenitis suppurativa", "region": null, "stage": "P2a", "therapeutic_area": "immunology"},
         {"asset": "TAK-079", "indication": "Immune thrombocytopenia", "region": "Global", "stage": "P3", "therapeutic_area": "hematology"},
         {"asset": "TAK-079", "indication": "Immunoglobulin A nephropathy", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
-        {"asset": "TAK-227", "indication": "Celiac disease", "region": "Global", "stage": "P2b", "therapeutic_area": "gastroenterology"}
+        {"asset": "TAK-227", "indication": "Celiac disease", "region": null, "stage": "P2b", "therapeutic_area": "gastroenterology"}
       ],
       "regulatory_events": [
         {"asset": "TAK-755", "action": "filed", "indication": "Congenital Thrombotic Thrombocytopenic Purpura", "region": "CN", "agency": "NMPA", "date": "Mar 2025", "from_progress_row": true}
@@ -106,15 +106,15 @@
         {"identifiers": ["SGN-35", "brentuximab vedotin"]}
       ],
       "programs": [
-        {"asset": "TAK-101", "indication": "Celiac disease", "region": "Global", "stage": "P2", "therapeutic_area": "gastroenterology"},
-        {"asset": "TAK-781", "indication": "Primary sclerosing cholangitis", "region": "Global", "stage": "P1", "therapeutic_area": "hepatology"},
+        {"asset": "TAK-101", "indication": "Celiac disease", "region": null, "stage": "P2", "therapeutic_area": "gastroenterology"},
+        {"asset": "TAK-781", "indication": "Primary sclerosing cholangitis", "region": null, "stage": "P1", "therapeutic_area": "hepatology"},
         {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "JP", "stage": "filed", "therapeutic_area": "neuroscience"},
         {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "US", "stage": "filed", "therapeutic_area": "neuroscience"},
         {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "CN", "stage": "filed", "therapeutic_area": "neuroscience"},
         {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "EU", "stage": "P3", "therapeutic_area": "neuroscience"},
-        {"asset": "TAK-755", "indication": "Acute ischemic stroke", "region": "Global", "stage": "P2", "therapeutic_area": "neuroscience"},
-        {"asset": "TAK-360", "indication": "Idiopathic hypersomnia", "region": "Global", "stage": "P2", "therapeutic_area": "neuroscience"},
-        {"asset": "TAK-360", "indication": "Narcolepsy type 2", "region": "Global", "stage": "P2", "therapeutic_area": "neuroscience"}
+        {"asset": "TAK-755", "indication": "Acute ischemic stroke", "region": null, "stage": "P2", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-360", "indication": "Idiopathic hypersomnia", "region": null, "stage": "P2", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-360", "indication": "Narcolepsy type 2", "region": null, "stage": "P2", "therapeutic_area": "neuroscience"}
       ],
       "trials": [
         {"assets": ["TAK-755"], "indication": "Acute ischemic stroke", "phase": "2", "met_primary_endpoint": null}

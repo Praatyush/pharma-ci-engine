@@ -1,5 +1,29 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-10 — Two key-normalizations: sub-phase collapse + region-indeterminate
+
+Surfaced by the Takeda pipeline table (census batch 1). One reusable pattern names both:
+**collapse a sub-distinction the source makes but the key shouldn't gate on.**
+
+- **Sub-phase collapse (the stage analog of the agency PMDA==MHLW fold).** Source writes
+  `P-II (b)`; the model writes `P2`. `P2b` IS a Phase 2, so gating the key on the sub-letter
+  manufactures false misses. `matching.collapse_phase` strips the sub-phase letter
+  (P2a/P2b→P2, P3a/P3b→P3, 2a/2b→2; leaves P1/2, preclinical, filed, …) for the **key** in
+  both program and trial matching. Golden keeps the precise sub-phase; sub-phase is a scored
+  attribute. Generalized (not a P2a/P2b special-case) so a future `P3b` doesn't reopen this.
+- **Region-indeterminate (`region=null`).** A "-" in the region column = the source states
+  NO region. Verified there is **no legend** defining "-" (the glossary defines CN/EU/JP/U.S.
+  and spells out "Global" as a word). Labeling it `Global` would manufacture a key value from
+  absence — and would assert on the golden side exactly what grounding penalizes on the
+  predicted side (11% regions inferred-not-stated). So `GoldenProgram.region` is nullable;
+  null drops region from the key (`program_matches`: `g.region is None or p.region==g.region`)
+  and the program is still scored on asset+indication+stage. Same discipline as the chunk-29
+  region-inferred exclusions. Affected 10 programs in census chunks 8-9.
+
+**Labeling guard (bitten twice — IT-formulation, then "Pediatric" on MLN0002):** `indication`
+= DISEASE ONLY; population/formulation/dosing/line-of-therapy are separate fields, never folded
+into the indication string. Recorded in `src/evals/CLAUDE.md` policy (e).
+
 ## 2026-06-10 — Grounding full-run findings + the chunk-granularity caveat
 
 Full grounding run over all **307 predicted facts** (`grounding.py`, commit `1849a1d`):

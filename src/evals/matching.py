@@ -20,11 +20,24 @@ Approved keys (docs/HANDOFF.md):
   MarketMetric     (subject~, metric, geography~)              period/value = attributes
 """
 
+import re
 from collections.abc import Callable, Hashable, Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
 from .normalize import canonical_term, fuzzy_match, is_null_sentinel, slug
+
+_SUBPHASE_RE = re.compile(r"^(P?\d)[ab]$")
+
+
+def collapse_phase(value: str) -> str:
+    """Collapse a sub-phase to its parent for KEY purposes: P2a/P2b->P2, 2a/2b->2.
+
+    A sub-distinction the source makes but the key shouldn't gate on (the stage analog of the
+    agency PMDA==MHLW fold). Golden keeps the precise sub-phase; the key uses the collapsed one.
+    Leaves P1/2, 1/2, preclinical, filed, approved, etc. unchanged.
+    """
+    return _SUBPHASE_RE.sub(r"\1", value)
 
 
 # --------------------------------------------------------------------------- #
@@ -132,7 +145,7 @@ def build_golden_asset_index(golden_assets: Iterable[Any]) -> AssetIndex:
 # Per-type collapse keys (hashable; open fields normalized-exact)
 # --------------------------------------------------------------------------- #
 def program_key(p: Any, idx: AssetIndex) -> Hashable:
-    return (idx.resolve(p.asset_id), canonical_term(p.indication), p.region, p.stage)
+    return (idx.resolve(p.asset_id), canonical_term(p.indication), p.region, collapse_phase(p.stage))
 
 
 def trial_key(t: Any, idx: AssetIndex) -> Hashable:
@@ -144,7 +157,7 @@ def trial_key(t: Any, idx: AssetIndex) -> Hashable:
         "triple",
         frozenset(idx.resolve(a) for a in t.asset_ids),
         canonical_term(t.indication),
-        t.phase,
+        collapse_phase(t.phase),
     )
 
 
@@ -225,8 +238,8 @@ def _assets_overlap(pred_slugs: frozenset[str], gold_slugs: frozenset[str]) -> b
 def program_matches(p: Any, g: Any, pidx: AssetIndex, gidx: AssetIndex) -> bool:
     return (
         _assets_overlap(pidx.cluster_slugs(p.asset_id), gidx.cluster_slugs(slug(g.asset)))
-        and p.region == g.region
-        and p.stage == g.stage
+        and (g.region is None or p.region == g.region)  # null golden region = indeterminate
+        and collapse_phase(p.stage) == collapse_phase(g.stage)
         and fuzzy_match(p.indication, g.indication)
     )
 
@@ -249,7 +262,7 @@ def trial_matches(t: Any, g: Any, pidx: AssetIndex, gidx: AssetIndex) -> bool:
     gold_slugs = frozenset().union(*(gidx.cluster_slugs(slug(a)) for a in g.assets)) if g.assets else frozenset()
     return (
         _assets_overlap(pred_slugs, gold_slugs)
-        and t.phase == g.phase
+        and collapse_phase(t.phase) == collapse_phase(g.phase)
         and fuzzy_match(t.indication, g.indication)
     )
 

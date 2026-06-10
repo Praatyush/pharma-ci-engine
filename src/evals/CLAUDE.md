@@ -52,6 +52,16 @@ deviation in that chunk's `note`.
   jurisdiction; review-vs-approve is bureaucratic) via
   `normalize.agency_attribute_matches`; all other agencies are distinct, so a
   declined/`other` agency scores as an attribute error.
+- **(e) `indication` = DISEASE ONLY.** Population (pediatric), formulation (IV/SC/IT),
+  dosing, and line-of-therapy are separate fields/attributes — **never** fold them into
+  the indication string (it breaks the fuzzy key). E.g. "Pediatric Study (IT formulation
+  for X)" → indication "X". (1L/2L may stay only where the source's indication cell
+  literally includes it and it's the sole disambiguator.)
+- **(f) Region-indeterminate.** A "-" (or blank) in a region column = the source states
+  **no** region → label `region: null` (program kept, scored on asset+indication+stage;
+  region dropped from the key). Do NOT manufacture `Global`/`other` — same discipline as
+  the chunk-29 region-inferred exclusions; the predicted-side mirror is grounding's
+  `inferred`. Only use an explicit region the source states (or spells out as "Global").
 
 ## Scoring rule (scope before collapse)
 
