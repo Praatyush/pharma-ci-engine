@@ -28,6 +28,37 @@
         {"asset": "TAK-577", "action": "approval", "indication": "von Willebrand disease", "region": "JP", "agency": "MHLW", "date": "Feb 2026", "from_progress_row": true},
         {"asset": "TAK-861", "action": "filed", "indication": "Narcolepsy type 1", "region": "JP", "agency": "PMDA", "date": "Mar 2026", "from_progress_row": true}
       ]
+    },
+    {
+      "chunk_index": 12,
+      "line_range": [537, 618],
+      "note": "Plasma-Derived Therapies main pipeline table. Targets the IVIG over-merge cluster: TAK-961/TAK-339/TAK-771/TAK-880/TAK-330 are DISTINCT molecules (distinct dev codes + distinct brands) — golden lists each separately, EXCLUDING the shared class names ('IVIG','10% IVIG') from identifiers so golden truth does not itself over-merge. Note TAK-339 brand 'GAMMAGARD LIQUID' vs TAK-880 'GAMMAGARD LIQUID ERC' (distinct). Main-table status cells ('Approved (Feb 2026)', 'Filed (Oct 2025)') are dual-encoded as Program (stage) + RegulatoryEvent (action), from_progress_row=true. The lines 537-542 fragment (small-molecule CMV row, no in-chunk identifier) and TAK-330 (cut off at 618, no facts) follow policy (c)/identity-only. 'PROTHROMPLEX TOTAL' brand confirms 'Total' is not a self-reference.",
+      "assets": [
+        {"identifiers": ["TAK-961", "KENKETU GLOVENIN-I"], "modality": "plasma_derived"},
+        {"identifiers": ["TAK-339", "GLOVENIN-I", "GAMMAGARD LIQUID"], "modality": "plasma_derived"},
+        {"identifiers": ["TAK-771", "HYQVIA"], "modality": "plasma_derived"},
+        {"identifiers": ["TAK-880", "GAMMAGARD LIQUID ERC", "DEQSIGA"], "modality": "plasma_derived"},
+        {"identifiers": ["TAK-330", "PROTHROMPLEX TOTAL"], "modality": "plasma_derived"}
+      ],
+      "programs": [
+        {"asset": "TAK-961", "indication": "Multiple Indications", "region": "JP", "stage": "approved", "therapeutic_area": "immunology"},
+        {"asset": "TAK-961", "indication": "Autoimmune Encephalitis", "region": "JP", "stage": "filed", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-339", "indication": "Multiple Indications", "region": "JP", "stage": "approved", "therapeutic_area": "immunology"},
+        {"asset": "TAK-339", "indication": "Autoimmune Encephalitis", "region": "JP", "stage": "filed", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-339", "indication": "Secondary Immunodeficiencies", "region": "US", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "TAK-771", "indication": "Chronic inflammatory demyelinating polyradiculoneuropathy and multifocal motor neuropathy", "region": "JP", "stage": "approved", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-880", "indication": "Primary Immunodeficiencies", "region": "US", "stage": "approved", "therapeutic_area": "immunology"},
+        {"asset": "TAK-880", "indication": "Primary Immunodeficiencies", "region": "EU", "stage": "approved", "therapeutic_area": "immunology"}
+      ],
+      "regulatory_events": [
+        {"asset": "TAK-961", "action": "approval", "indication": "Multiple Indications", "region": "JP", "agency": "MHLW", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-961", "action": "filed", "indication": "Autoimmune Encephalitis", "region": "JP", "agency": "PMDA", "date": "Oct 2025", "from_progress_row": true},
+        {"asset": "TAK-339", "action": "approval", "indication": "Multiple Indications", "region": "JP", "agency": "MHLW", "date": "July 2025", "from_progress_row": true},
+        {"asset": "TAK-339", "action": "filed", "indication": "Autoimmune Encephalitis", "region": "JP", "agency": "PMDA", "date": "Oct 2025", "from_progress_row": true},
+        {"asset": "TAK-771", "action": "approval", "indication": "Chronic inflammatory demyelinating polyradiculoneuropathy and multifocal motor neuropathy", "region": "JP", "agency": "MHLW", "date": "June 2025", "from_progress_row": true},
+        {"asset": "TAK-880", "action": "approval", "indication": "Primary Immunodeficiencies", "region": "US", "agency": "FDA", "date": "June 2025", "from_progress_row": true},
+        {"asset": "TAK-880", "action": "approval", "indication": "Primary Immunodeficiencies", "region": "EU", "agency": "EMA", "date": "May 2025", "from_progress_row": true}
+      ]
     }
   ]
 }

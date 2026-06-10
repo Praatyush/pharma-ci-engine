@@ -162,6 +162,21 @@ def fold_self_reference(subject: str | None, source_company: str) -> str | None:
     return source_company if canonical_term(subject) in self_refs else subject
 
 
+# Null-sentinel values an extractor emits when it declines to fill an open-text field.
+# A predicted fact whose OPEN-TEXT KEY field is one of these can't be cleanly keyed -> it is
+# "key-incomplete" (under-specified), scored apart from a clean false positive (see
+# matching.is_key_incomplete / docs/LEARNINGS.md). Closed enums have no null sentinel.
+_NULL_SENTINELS = {
+    "", "not specified", "unspecified", "not stated", "not disclosed", "undisclosed",
+    "n a", "na", "none", "unknown", "tbd", "not applicable",
+}
+
+
+def is_null_sentinel(value: str | None) -> bool:
+    """True if ``value`` is missing or a decline-to-fill sentinel (e.g. 'not specified')."""
+    return value is None or canonical_term(value) in _NULL_SENTINELS
+
+
 # --------------------------------------------------------------------------- #
 # Agency attribute equivalence (RegulatoryEvent.agency is a scored attribute)
 # --------------------------------------------------------------------------- #

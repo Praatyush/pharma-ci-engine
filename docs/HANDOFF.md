@@ -21,10 +21,15 @@ before batch labeling.
   predicted↔golden match predicates + `match_lists`.
 - `365722e` Takeda **golden chunk 14** labeled + scored end-to-end; labeling policy adopted
   (`src/evals/CLAUDE.md`); `from_progress_row` on golden reg-events; agency rule (PMDA==MHLW).
-- **This commit:** Novartis **golden chunk 32** (trials VAYHIA-unmet/INVEST-HD, programs,
-  standalone PRIME reg-event, net-sales metric) scored end-to-end; **company self-reference
-  fix** (`normalize.fold_self_reference`: "Company"->source_company, excludes "Total") — the
-  chunk-32 metric flips to 1 TP/0 FP/0 FN.
+- `5303825` Novartis **golden chunk 32** scored end-to-end; **company self-reference fix**
+  (`normalize.fold_self_reference`: "Company"->source_company, excludes "Total") — chunk-32
+  metric flips to 1 TP/0 FP/0 FN.
+- **This commit:** golden **batch** (Takeda chunk 12 IVIG cluster; Novartis chunks 29
+  standalone-reg + 30 RemIND-met/MARINA) + **labeling policies 1-3** (multi-region split;
+  key-incomplete ≠ FP via `matching.is_key_incomplete`/`normalize.is_null_sentinel`;
+  no manufactured region key). 5-chunk matcher: trials 4/4, metrics 1/1, **reg P=1.00 R=0.26
+  (standalone 0.23 / progress 0.30)**, programs P=0.89 R=0.70; chunk-12 reg **0/7**; IVIG
+  over-merge 3 distinct → 1 cluster.
 
 ### Locked this stage
 - **Approved match keys:** Program `(asset, indication~, region, stage)`; Trial
@@ -40,13 +45,14 @@ before batch labeling.
   measured later (LEARNINGS 2026-06-10).
 
 ### Next
-- **Batch-label toward coverage** of the open questions (not volume): standalone reg-events
-  (`from_progress_row=false`, prose designations — Novartis Innovation Review chunks 28-30);
-  the IVIG over-merge cluster (Takeda **chunk 12**, where TAK-339/771/880/961 + brands
-  concentrate); trial met/unmet readouts (Novartis 30 RemIND-met, 32 VAYHIA-unmet). Corpus
-  has **zero NCT IDs**, so the trial nct_id key-tier is untested by real data.
-- Then build `metrics.py` (P/R/F1; standalone reg-event recall reported separately; miss/FP/
-  attr-error lists must carry source `line_range`+snippet) + grounding + runner. Judge last.
+- **Build `metrics.py`** (gated output): scope raw → union of labeled chunks → collapse once →
+  match union (never collapse-then-scope or sum per-chunk). Per-type P/R/F1; reg-events at BOTH
+  grains (standalone vs progress-row, AND region-split vs region-collapsed); `key_incomplete`
+  counted apart from clean FP. Asset recall over labeled chunks OK; asset **precision stays
+  document-level** (gated on full asset set labeled — do NOT report off the 5-chunk batch).
+  miss / FP / key_incomplete / attribute-error lists each carry source `line_range` + snippet.
+- Then grounding + runner + optional judge. Do NOT declare the Phase-2 baseline until the
+  inspectable lists are reviewed. Corpus has **zero NCT IDs** (nct_id key-tier untested).
 
 ---
 

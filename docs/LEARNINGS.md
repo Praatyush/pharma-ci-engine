@@ -1,5 +1,38 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-10 — Golden labeling policies: multi-region, under-specified, ambiguous-region
+
+All from one principle: golden encodes what the SOURCE supports at the SCHEMA's grain — never
+tuned to the model's output, never inventing a key value from labeler uncertainty.
+
+1. **Multi-region actions are SPLIT.** `region` is in the RegulatoryEvent key, so "US, EU, JP
+   & CN submissions" is FOUR `filed` events. The model emitting one is a real
+   under-decomposition miss, not a reason to collapse golden. `metrics.py` also reports a
+   region-collapsed recall cut so one 4-region sentence (4/13 of the standalone denominator)
+   can't dominate the headline.
+2. **Key-incomplete ≠ false positive.** A predicted fact whose open-text KEY field is a null
+   sentinel (a designation with `indication="not specified"`) is **under-specified**, not
+   hallucinated: keep the golden FN (no indication = no captured fact), but score the predicted
+   side as a distinct `key_incomplete` outcome (matching.is_key_incomplete /
+   normalize.is_null_sentinel), NOT a clean FP — precision must not eat a phantom FP. Do NOT
+   demote indication to an attribute to fix this; indication has real disambiguating power
+   (IgAN vs SLE), and demoting it would tune the key to the model. Finding: Flash-Lite extracts
+   regulatory designations but routinely drops the indication.
+3. **Ambiguous region: don't manufacture a key.** Real model errors stay errors (the source
+   shows Pluvicto's EU application was WITHDRAWN; a model "EU approved" is a genuine FP). But
+   where the source gives region only by mashed-column position (not prose), EXCLUDE the fact
+   rather than guess — `region="other"` is a substantive enum ("outside the named set"), NOT an
+   unknown-sentinel, so using it that way manufactures fake matches/penalties. Same discipline
+   as policy (c): no source support for a key field → don't invent one. (Applied: 3
+   region-inferred chunk-29 programs excluded; molecules kept as assets, prose-explicit
+   reg-events kept.)
+
+Effect on the 5-chunk batch: reg-event **precision 0.67→1.00** (3 designation FPs → KI),
+**recall 0.26** (standalone 0.23 / progress-row 0.30); programs R 0.65→0.70. Clean findings
+unchanged: Takeda chunk-12 reg-events **0/7** (table status cells extracted as program stages,
+not RegulatoryEvents) and the IVIG over-merge (3 distinct plasma molecules → 1 predicted
+cluster).
+
 ## 2026-06-10 — Own-company metrics get a generic subject ("Company"), not the name
 
 **What:** On Novartis chunk 32 the net-sales `MarketMetric` matched on value/period/geography

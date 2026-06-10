@@ -87,6 +87,24 @@ def test_match_lists_aligns_predicted_to_golden():
     assert len(out.misses) == 1
 
 
+def test_key_incomplete_separated_from_false_positive():
+    # A predicted reg-event with indication='not specified' is under-specified (key-incomplete),
+    # NOT a clean false positive; the golden it under-specifies stays a miss.
+    pidx = M.build_asset_index([_asset("ianalumab", generic_name="ianalumab")])
+    gidx = M.build_golden_asset_index([GoldenAsset(identifiers=["ianalumab"])])
+    predicted = [
+        _reg("ianalumab", "breakthrough", "not specified", "US", "FDA"),  # key-incomplete
+        _reg("ianalumab", "orphan", "Lupus", "US", "FDA"),                # clean FP (keyable)
+    ]
+    golden = [GoldenRegulatoryEvent(asset="ianalumab", action="breakthrough", indication="Sjogren's disease",
+                                    region="US", agency="FDA", from_progress_row=False)]
+    out = M.match_lists(predicted, golden, "regulatory_events", pidx, gidx)
+    assert not out.matched
+    assert len(out.misses) == 1                 # golden designation stays a miss
+    assert len(out.key_incomplete) == 1         # the 'not specified' one
+    assert len(out.false_positives) == 1        # the keyable Lupus one
+
+
 def test_regevent_match_ignores_agency_uses_region():
     # agency demoted: predicted agency 'other' but region JP still matches golden PMDA/JP.
     pidx = M.build_asset_index([_asset("tak-861", development_codes=["TAK-861"])])

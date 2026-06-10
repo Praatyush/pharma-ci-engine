@@ -24,7 +24,7 @@ from collections.abc import Callable, Hashable, Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
-from .normalize import canonical_term, fuzzy_match, slug
+from .normalize import canonical_term, fuzzy_match, is_null_sentinel, slug
 
 
 # --------------------------------------------------------------------------- #
@@ -270,13 +270,36 @@ _PREDICATES: dict[str, Callable[[Any, Any, AssetIndex, AssetIndex], bool]] = {
 }
 
 
+# Open-text key fields per type — a null sentinel here means the entity can't be cleanly
+# keyed (under-specified), so it is "key-incomplete" rather than a clean false positive.
+# Trials are exempt while they carry an nct_id or trial_name (those key them instead).
+_OPEN_KEY_FIELDS: dict[str, Callable[[Any], list[Any]]] = {
+    "programs": lambda p: [p.indication],
+    "regulatory_events": lambda r: [r.indication],
+    "trials": lambda t: [] if (t.nct_id or t.trial_name) else [t.indication],
+    "market_metrics": lambda m: [m.subject, m.geography],
+}
+
+
+def is_key_incomplete(entity: Any, entity_type: str) -> bool:
+    """True if a predicted entity has a null-sentinel in an open-text key field.
+
+    Such an entity (e.g. a regulatory designation with ``indication='not specified'``) is
+    under-specified, not hallucinated — it is scored apart from a clean false positive so
+    precision doesn't charge a phantom FP for under-specification (see docs/LEARNINGS.md).
+    """
+    getter = _OPEN_KEY_FIELDS.get(entity_type)
+    return bool(getter) and any(is_null_sentinel(v) for v in getter(entity))
+
+
 @dataclass
 class MatchOutcome:
     """Alignment of collapsed predictions to golden labels for one entity type."""
 
     matched: list[tuple[Any, Any]]  # (predicted, golden)
-    false_positives: list[Any]      # predicted with no golden match
+    false_positives: list[Any]      # predicted with no golden match (a clean, keyable fact)
     misses: list[Any]               # golden with no predicted match
+    key_incomplete: list[Any] = field(default_factory=list)  # predicted, unmatched, null-sentinel key
 
 
 def match_lists(
@@ -288,9 +311,10 @@ def match_lists(
 ) -> MatchOutcome:
     """Greedily align predictions to golden via the per-type key predicate.
 
-    One-to-one: each golden label claims at most one predicted entity. Remaining
-    predictions are false positives; unclaimed golden labels are misses. (Counting
-    these into precision/recall/F1 is metrics.py.)
+    One-to-one: each golden label claims at most one predicted entity. Unmatched golden
+    labels are misses. Unmatched predictions split into ``key_incomplete`` (a null-sentinel
+    in an open-text key field — under-specified) and ``false_positives`` (clean, keyable but
+    unmatched). (Counting these into precision/recall/F1 is metrics.py.)
     """
     predicate = _PREDICATES[entity_type]
     used: set[int] = set()
@@ -303,7 +327,9 @@ def match_lists(
                 matched.append((p, g))
                 used.add(i)
                 break
-    false_positives = [p for i, p in enumerate(predicted) if i not in used]
+    unmatched = [p for i, p in enumerate(predicted) if i not in used]
+    key_incomplete = [p for p in unmatched if is_key_incomplete(p, entity_type)]
+    false_positives = [p for p in unmatched if not is_key_incomplete(p, entity_type)]
     matched_golden = {id(g) for _, g in matched}
     misses = [g for g in golden if id(g) not in matched_golden]
-    return MatchOutcome(matched, false_positives, misses)
+    return MatchOutcome(matched, false_positives, misses, key_incomplete)
