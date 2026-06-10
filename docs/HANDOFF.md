@@ -5,12 +5,12 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
-## Phase 2 (Stage 1) — Extraction persistence + Takeda baseline artifact (2026-06-09)
+## Phase 2 (Stage 1, COMPLETE) — Extraction persistence + both corpus artifacts (2026-06-09)
 
 **Current authoritative state** (supersedes the Phase 1 entry below). Work continues on
 branch **`phase-2-evals`**. Phase 2 is being built in two stages with a checkpoint
-between; this is **Stage 1** — the scoreable extraction artifact — *before* the eval
-harness itself.
+between; **Stage 1 is done** — both scoreable extraction artifacts are persisted —
+*before* the eval harness (Stage 2).
 
 ### Work completed
 - **Extraction persistence** — `src/extraction/persistence.py`: `save_extraction` /
@@ -19,32 +19,43 @@ harness itself.
 - **Run CLI** — `src/extraction/run.py` (`python -m src.extraction.run --report takeda`):
   load → chunk → paced per-chunk extraction (4.5s) with progress logging → persist to
   `data/eval/extractions/` (gitignored via `data/`). Named presets for takeda/novartis;
-  `--path/--company/...` overrides; `--limit` for a subset run.
+  `--path/--company/...` overrides; `--limit` (first-N smoke test); **`--chunks 3,4,…`**
+  (targeted slice → `<doc>.slice.extraction.json`, recording `selected_chunks` +
+  `source_total_chunks` in `meta`).
 - **`extract_document`** gained two backward-compatible kwargs: `delay_seconds=0.0`
   (proactive pacing, default off) and `on_chunk` (progress callback). Existing
   behavior/tests unchanged.
 - Tests: **59 passing** (+4 persistence round-trip).
 
-### Baseline artifact (the input Phase 2 scores against)
+### Baseline artifacts (the input Stage 2 scores against)
 - `data/eval/extractions/qr2025_q4_Pipeline_table_en.extraction.json` — Takeda, full
-  document, 34/34 chunks, zero failures. Model `gemini-3.1-flash-lite-preview`,
-  git_sha `bace5ce`.
-- Counts: **assets 150, programs 178, trials 5, regulatory_events 13, market_metrics 0**
-  (assets duplicated per-chunk by design). Takeda is trial-thin and carries no financial
-  metrics → confirms the **Novartis slice** is needed for trial-recall + market-metric
-  scoring.
+  document, 34/34 chunks. Counts: **a150 / p178 / t5 / r13 / m0**.
+- `data/eval/extractions/q1-2026-interim-financial-report-en.slice.extraction.json` —
+  Novartis, **12-chunk slice** `[3,4,12,13,15,16,18,28,29,30,31,32]` (trial-/metric-heavy
+  only; selected by chunk-level signal density). Counts: **a74 / p54 / t6 / r11 / m40**.
+- Both zero-failure, model `gemini-3.1-flash-lite-preview`, git_sha `bace5ce` / `9129cec`.
+- **Combined corpus:** assets 224, programs 232, **trials 11**, regulatory_events 24,
+  **market_metrics 40** (assets duplicated per-chunk by design). The Novartis slice is
+  what makes trial-recall + market-metric scoring measurable (Takeda alone: t5, m0).
 
 ### Decisions / notes
 - Extraction output is now a **persisted, versioned artifact** under gitignored `data/`,
   never held in memory / `/tmp` (see LEARNINGS 2026-06-09).
 - Snippet fallback to chunk text is visible on mashed table rows; duplicate facts are
   present by design. Both are **Phase-2 eval measurement targets, not Stage-1 bugs**.
+- **Two matching-design issues the real artifacts surfaced** (to resolve PLAN-FIRST
+  before harness code, since they touch the approved keys): (1) `MarketMetric.period`
+  came back `'not specified'` (stated once globally, like `as_of_date`) — decide whether
+  `period` stays a hard match key (defaulted from doc context) or becomes a scored
+  attribute; (2) `MarketMetric.value` unit-scale varies (`1.3 billion` vs `184 million`)
+  — value comparison must normalize scale.
 
 ### Recommended next step
-- Finish Stage 1: produce the **Novartis slice artifact** (only the trial-/metric-heavy
-  chunks, not all 100). Then **Stage 2** — golden labeling + the eval harness (matching,
-  duplicate-collapse, normalization, metrics). Do not start Stage 2 until both artifacts
-  are confirmed.
+- **Stage 2 — eval harness.** PLAN-FIRST on the two matching-design issues above, then
+  build the module layout (golden label schema + loader → normalize → matching →
+  grounding → metrics → optional judge → runner). Build the **golden label schema +
+  loader FIRST** and checkpoint the label-file format against the real artifacts before
+  any hand-labeling.
 
 ---
 

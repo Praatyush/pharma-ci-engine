@@ -70,8 +70,13 @@ def _git_sha() -> str | None:
         return None
 
 
-def _running_total_reporter():
-    """A stateful ``on_chunk`` callback that prints per-chunk + cumulative counts."""
+def _running_total_reporter(original_indices: list[int] | None = None):
+    """A stateful ``on_chunk`` callback that prints per-chunk + cumulative counts.
+
+    When ``original_indices`` is given (a slice run), the label shows each chunk's
+    original document index (``chunk#NN``) rather than its position in the subset,
+    so the printed provenance matches the persisted ``source_ref`` line ranges.
+    """
     totals = {k: 0 for k in ("assets", "programs", "trials", "regulatory_events", "market_metrics")}
 
     def report(index: int, total: int, chunk_result: ExtractionResult) -> None:
@@ -91,7 +96,11 @@ def _running_total_reporter():
         )
         cum = f"Σ a{totals['assets']} p{totals['programs']} t{totals['trials']} " \
               f"r{totals['regulatory_events']} m{totals['market_metrics']}"
-        print(f"  [{index + 1:>3}/{total}] {delta or '(none)':<28} {cum}", flush=True)
+        if original_indices is not None:
+            label = f"[{index + 1:>2}/{total}] chunk#{original_indices[index]:>3}"
+        else:
+            label = f"[{index + 1:>3}/{total}]" + " " * 9
+        print(f"  {label} {delta or '(none)':<28} {cum}", flush=True)
 
     return report
 
@@ -129,6 +138,12 @@ def main() -> None:
     parser.add_argument("--overlap", type=int, default=ChunkConfig.overlap, help="Chunk overlap (chars).")
     parser.add_argument("--delay", type=float, default=_DEFAULT_DELAY_SECONDS, help="Inter-call pacing (s).")
     parser.add_argument("--limit", type=int, default=None, help="Extract only the first N chunks (smoke test).")
+    parser.add_argument(
+        "--chunks",
+        default=None,
+        help="Comma-separated original chunk indices to extract — a targeted slice "
+        "(e.g. '3,4,12'). Output is written as '<doc>.slice.extraction.json'.",
+    )
     parser.add_argument("--out-dir", type=Path, default=_DEFAULT_OUT_DIR, help="Output directory.")
     args = parser.parse_args()
 
@@ -142,16 +157,33 @@ def main() -> None:
         publication_date=spec.get("publication_date"),
         period_covered=spec.get("period_covered"),
     )
-    chunks = chunk_document(loaded, config)
-    if args.limit is not None:
-        chunks = chunks[: args.limit]
+    all_chunks = chunk_document(loaded, config)
+    if args.chunks:
+        selected = sorted({int(x) for x in args.chunks.split(",") if x.strip()})
+        bad = [i for i in selected if not 0 <= i < len(all_chunks)]
+        if bad:
+            raise SystemExit(f"--chunks out of range 0..{len(all_chunks) - 1}: {bad}")
+        chunks = [all_chunks[i] for i in selected]
+    elif args.limit is not None:
+        selected = list(range(min(args.limit, len(all_chunks))))
+        chunks = all_chunks[: args.limit]
+    else:
+        selected = None
+        chunks = all_chunks
 
     model = os.environ.get("GEMINI_MODEL", "(GEMINI_MODEL unset)")
-    out_path = args.out_dir / f"{loaded.document.id}.extraction.json"
+    suffix = ".slice.extraction.json" if args.chunks else ".extraction.json"
+    out_path = args.out_dir / f"{loaded.document.id}{suffix}"
 
+    if args.chunks:
+        scope = f"slice {selected}"
+    elif args.limit is not None:
+        scope = f"first {args.limit}"
+    else:
+        scope = "full document"
     print(f"Report   : {loaded.document.id}  ({spec['source_company']}, {spec['doc_type']})")
-    print(f"Chunks   : {len(chunks)}  (size={config.chunk_size}, overlap={config.overlap}"
-          f"{', LIMITED to ' + str(args.limit) if args.limit is not None else ''})")
+    print(f"Chunks   : {len(chunks)} of {len(all_chunks)}  ({scope}; "
+          f"size={config.chunk_size}, overlap={config.overlap})")
     print(f"Model    : {model}   pacing={args.delay}s/call   as_of={spec['as_of_date']}")
     print(f"Output   : {out_path}")
     print("Extracting (per-chunk):", flush=True)
@@ -161,7 +193,7 @@ def main() -> None:
         source_company=spec["source_company"],
         as_of_date=spec["as_of_date"],
         delay_seconds=args.delay,
-        on_chunk=_running_total_reporter(),
+        on_chunk=_running_total_reporter(selected if args.chunks else None),
     )
 
     meta = {
@@ -170,6 +202,8 @@ def main() -> None:
         "doc_type": spec["doc_type"],
         "as_of_date": spec["as_of_date"],
         "chunk_count": len(chunks),
+        "source_total_chunks": len(all_chunks),
+        "selected_chunks": selected,
         "chunk_config": {"chunk_size": config.chunk_size, "overlap": config.overlap},
         "limit": args.limit,
         "extraction_model": model,
