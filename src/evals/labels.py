@@ -84,13 +84,19 @@ class GoldenTrial(_Base):
 
 
 class GoldenRegulatoryEvent(_Base):
-    """Key (proposed): (asset, action, indication, region). agency = scored attribute."""
+    """Key: (asset, action, indication, region). agency = scored attribute."""
 
     asset: str = Field(..., description="Any one identifier of the asset.")
     action: RegulatoryAction = Field(..., description="Key (exact closed enum).")
     indication: str = Field(..., description="Key (fuzzy-matched).")
     region: Region = Field(..., description="Key (exact closed enum).")
-    agency: Agency = Field(..., description="Scored attribute (still labeled).")
+    agency: Agency = Field(..., description="Scored attribute (still labeled). PMDA==MHLW in scoring.")
+    from_progress_row: bool = Field(
+        ...,
+        description="True if derived from a pipeline progress-table row (co-located with a "
+        "Program); False for a standalone prose action. Lets metrics.py report standalone "
+        "reg-event recall separately — the hard, headline case.",
+    )
     status: RegulatoryStatus | None = Field(None, description="Scored attribute.")
     date: str | None = Field(None, description="Scored attribute.")
 

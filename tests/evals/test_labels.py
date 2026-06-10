@@ -51,6 +51,7 @@ EXAMPLE = {
                     "indication": "Sjogren's disease",
                     "region": "US",
                     "agency": "FDA",
+                    "from_progress_row": False,
                 }
             ],
             "market_metrics": [
@@ -85,6 +86,13 @@ def test_loads_and_validates_example(tmp_path):
     assert chunk.market_metrics[0].unit == "billion"
     # version constant is what the loader enforces
     assert gold.golden_schema_version == GOLDEN_SCHEMA_VERSION
+
+
+def test_regevent_requires_from_progress_row(tmp_path):
+    bad = json.loads(json.dumps(EXAMPLE))
+    del bad["labeled_chunks"][0]["regulatory_events"][0]["from_progress_row"]
+    with pytest.raises(ValueError):
+        load_golden(_write(tmp_path, bad))
 
 
 def test_rejects_unknown_version(tmp_path):

@@ -1,5 +1,28 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-10 — Scope predictions to labeled chunks BEFORE collapsing (not after)
+
+**What:** First end-to-end scoring of one labeled chunk (Takeda chunk 14) produced **false
+FNs** — golden programs/reg-events that Flash-Lite *did* extract were scored as misses
+(TAK-961, TAK-861).
+
+**Why:** The harness collapsed predictions **document-wide first**, then scoped to the
+labeled chunk by the collapsed representative's `source_ref.line_range`. `collapse()` keeps
+the **first** emission's `source_ref`, so a fact extracted in several chunks is attributed
+to whichever chunk came first. TAK-861 (narcolepsy, filed) and TAK-961 appear in BOTH the
+chunk-9 regulatory table and the chunk-14 progress table; their representatives were stamped
+chunk 9, so scoping to chunk 14 dropped them. Confirmed: chunk 14's RAW extraction had all
+4 programs + 3 reg-events.
+
+**Fix / rule (for `metrics.py`):** Scope **raw** predictions to the **union of labeled chunk
+indices**, collapse **once within that union**, and match against the **union of golden
+labels**. Do **NOT** collapse-then-scope, and do **NOT** sum per-chunk scores — a fact in two
+labeled chunks (TAK-861 in 9 and 14) would be **double-counted**, measuring per-*mention*
+recall instead of per-*fact* recall. The document-wide `collapse()` stays (correct for the
+dedup-count report and the shared asset index, just not for chunk-scoped fact selection).
+Asset P/R is separately **document-level** (assets carry no `source_ref`, can't be
+chunk-scoped) and is gated on the document's full asset set being labeled.
+
 ## 2026-06-10 — Asset clustering can transitively over-merge on shared weak identifiers
 
 **What:** The eval duplicate-collapse clusters assets by **shared-identifier union-find**

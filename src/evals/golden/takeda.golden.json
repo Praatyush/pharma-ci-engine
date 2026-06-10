@@ -1,0 +1,33 @@
+{
+  "golden_schema_version": "1",
+  "document_id": "qr2025_q4_Pipeline_table_en",
+  "source_company": "Takeda",
+  "artifact": "qr2025_q4_Pipeline_table_en.extraction.json",
+  "reporting_period": "FY2025 Q4",
+  "as_of_date": "2026-05-13",
+  "labeled_chunks": [
+    {
+      "chunk_index": 14,
+      "line_range": [699, 733],
+      "note": "Section II 'Recent Pipeline Progress in stage'. LABELING POLICY (to confirm): (1) a stage-progress row stating a regulatory action + date + region is labeled as BOTH a Program (the new stage) and a RegulatoryEvent (the action). (2) Reference-only footnote assets (Olverembatinib/HQP1351, ACI-24.060, IBI3001) are labeled as assets — their identity + originator are stated — but yield no Program/RegulatoryEvent here. (3) The B7H3 / solid-tumors fragment (lines 699-702) has no in-chunk asset identifier, so nothing is labeled from it. (4) Japan approvals name no agency in-source; agency is a scored attribute, labeled MHLW for marketing approval / PMDA for a filing.",
+      "assets": [
+        {"identifiers": ["TAK-961", "10% IVIG"]},
+        {"identifiers": ["TAK-577"]},
+        {"identifiers": ["TAK-861", "oveporexton"]},
+        {"identifiers": ["Olverembatinib", "HQP1351"]},
+        {"identifiers": ["ACI-24.060"]},
+        {"identifiers": ["IBI3001"]}
+      ],
+      "programs": [
+        {"asset": "TAK-961", "indication": "Multiple Indications", "region": "JP", "stage": "approved", "therapeutic_area": "immunology"},
+        {"asset": "TAK-577", "indication": "von Willebrand disease", "region": "JP", "stage": "approved", "therapeutic_area": "hematology"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "JP", "stage": "filed", "therapeutic_area": "neuroscience"}
+      ],
+      "regulatory_events": [
+        {"asset": "TAK-961", "action": "approval", "indication": "Multiple Indications", "region": "JP", "agency": "MHLW", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-577", "action": "approval", "indication": "von Willebrand disease", "region": "JP", "agency": "MHLW", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-861", "action": "filed", "indication": "Narcolepsy type 1", "region": "JP", "agency": "PMDA", "date": "Mar 2026", "from_progress_row": true}
+      ]
+    }
+  ]
+}

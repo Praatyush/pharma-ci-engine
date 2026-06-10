@@ -137,6 +137,27 @@ def fuzzy_match(a: str | None, b: str | None, threshold: float = FUZZY_MATCH) ->
 
 
 # --------------------------------------------------------------------------- #
+# Agency attribute equivalence (RegulatoryEvent.agency is a scored attribute)
+# --------------------------------------------------------------------------- #
+# Decision (docs/HANDOFF.md): PMDA and MHLW fold to a MATCH — both are the Japanese
+# regulatory jurisdiction (PMDA reviews, MHLW grants); the source rarely distinguishes
+# them and the difference is not CI-relevant. All other agencies are distinct, so a
+# declined/"other" agency still scores as an attribute error. Agency never blocks a
+# match (it was demoted from the key); this only scores attribute accuracy.
+_AGENCY_CLASS = {"PMDA": "JP", "MHLW": "JP"}
+
+
+def agency_class(agency: str | None) -> str | None:
+    """Equivalence class for agency attribute scoring (PMDA/MHLW -> 'JP')."""
+    return _AGENCY_CLASS.get(agency, agency) if agency is not None else None
+
+
+def agency_attribute_matches(predicted: str | None, golden: str | None) -> bool:
+    """True when two agencies are equivalent for attribute scoring (PMDA==MHLW)."""
+    return agency_class(predicted) == agency_class(golden)
+
+
+# --------------------------------------------------------------------------- #
 # Value-scale normalization (MarketMetric.value attribute scoring)
 # --------------------------------------------------------------------------- #
 _SCALES: dict[str, float] = {

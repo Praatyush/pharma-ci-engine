@@ -5,6 +5,44 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 2 (Stage 2, in progress) — Eval harness: matching machinery + golden labeling (2026-06-10)
+
+**Current authoritative state** (supersedes the Stage 1 entry below). Branch
+**`phase-2-evals`**. Building the harness incrementally with single-chunk checkpoints
+before batch labeling.
+
+### Committed
+- `2ff9c9f` **golden label schema + loader** (`src/evals/labels.py`) — key-agnostic
+  per-document JSON; closed enums reuse the schema `Literal`s.
+- `90010b9` **normalization + matching** (`src/evals/normalize.py`, `matching.py`):
+  `canonical_term` + domain synonym maps, difflib `fuzzy_match` (≥0.90), `slug` (parity
+  with `extractor._slug`), value-scale `to_base`/`values_match` (2% rel-tol); asset
+  identifier-overlap union-find, per-type collapse keys, `collapse()`, and the
+  predicted↔golden match predicates + `match_lists`.
+- **This commit:** Takeda **golden chunk 14** labeled + scored end-to-end; labeling policy
+  adopted (see `src/evals/CLAUDE.md`); `from_progress_row` added to golden reg-events;
+  agency attribute rule pinned (PMDA==MHLW).
+
+### Locked this stage
+- **Approved match keys:** Program `(asset, indication~, region, stage)`; Trial
+  `nct_id→trial_name~→(assets+indication~+phase)`; RegulatoryEvent
+  `(asset, action, indication~, region)` with **agency demoted** to a scored attribute;
+  MarketMetric `(subject~, metric, geography~)` with **period demoted** to a scored
+  attribute (defaults to `reporting_period`).
+- **Scope-before-collapse rule** for `metrics.py`: scope raw predictions to the union of
+  labeled chunk indices → collapse once → match the union of golden labels; never
+  collapse-then-scope or sum per-chunk (double-counts). Asset P/R is document-level. See
+  LEARNINGS 2026-06-10.
+- **Asset clustering:** Option A (simple merge-on-any-shared-identifier) for v1; over-merge
+  measured later (LEARNINGS 2026-06-10).
+
+### Next
+- One more single-chunk checkpoint (Novartis trial/metric path), then batch-label the
+  remaining Takeda reg/program-dense chunks + Novartis slice, then build `metrics.py`
+  (P/R/F1 + grounding + report) and the runner. Optional LLM judge last.
+
+---
+
 ## Phase 2 (Stage 1, COMPLETE) — Extraction persistence + both corpus artifacts (2026-06-09)
 
 **Current authoritative state** (supersedes the Phase 1 entry below). Work continues on

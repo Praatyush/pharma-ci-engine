@@ -48,3 +48,11 @@ def test_metric_dimension():
     assert N.metric_dimension("revenue") == "currency"
     assert N.metric_dimension("growth_rate") == "percent"
     assert N.metric_dimension("country_count") == "count"
+
+
+def test_agency_attribute_pmda_mhlw_fold():
+    # Policy (d): PMDA == MHLW for attribute scoring (same JP jurisdiction).
+    assert N.agency_attribute_matches("PMDA", "MHLW")
+    assert N.agency_attribute_matches("FDA", "FDA")
+    assert not N.agency_attribute_matches("FDA", "EMA")
+    assert not N.agency_attribute_matches("MHLW", "other")  # declined agency = attribute error

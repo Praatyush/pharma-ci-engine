@@ -92,7 +92,7 @@ def test_regevent_match_ignores_agency_uses_region():
     pidx = M.build_asset_index([_asset("tak-861", development_codes=["TAK-861"])])
     gidx = M.build_golden_asset_index([GoldenAsset(identifiers=["TAK-861"])])
     predicted = [_reg("tak-861", "filed", "Narcolepsy type 1", "JP", "other")]
-    golden = [GoldenRegulatoryEvent(asset="TAK-861", action="filed",
-                                    indication="Narcolepsy type 1", region="JP", agency="PMDA")]
+    golden = [GoldenRegulatoryEvent(asset="TAK-861", action="filed", indication="Narcolepsy type 1",
+                                    region="JP", agency="PMDA", from_progress_row=True)]
     out = M.match_lists(predicted, golden, "regulatory_events", pidx, gidx)
     assert len(out.matched) == 1 and not out.misses
