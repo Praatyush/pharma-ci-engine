@@ -48,13 +48,16 @@ before batch labeling.
   measured later (LEARNINGS 2026-06-10).
 
 ### Next (deferred, gated)
-- **`grounding.py`** (predicted-fact-vs-source, NO golden — independent of labeling): does the
-  cited `line_range` contain the fact's salient tokens (via `normalize` synonym map, since
-  source says "approved"/"Phase 3" but enums are "approval"/"3")? `line_range` is load-bearing;
-  snippet is decorative and its chunk-fallback on mashed rows is EXPECTED, not a failure.
+- **`grounding.py` — DONE this commit** (predicted-fact-vs-source, NO golden): per-token
+  containment of the cited `line_range`, closed enums via a reverse surface map. Each missing
+  token categorized `real_failure` / `map_gap` / `inferred`(region) — region grounding is its own
+  number (predicted-side mirror of golden policy 3). Full-run report reviewed-pending.
 - **Reg-event CENSUS** (stopping criterion as a census, not a sampled threshold): enumerate
-  every reg-event-bearing chunk in BOTH docs so reg-recall is measured over ALL corpus
-  reg-events. Then bulk-label (later turn) each chunk to satisfy metrics + grounding at once.
+  every reg-event-bearing chunk in BOTH docs (candidate list produced; prune Takeda 0,1 +
+  Novartis 78,79,96–98 boilerplate). Takeda 7,8,9,10,11,15,16 are the SAME status-cell pattern as
+  chunk 12 (scored 0/7), so censusing them will **push reg-recall below 0.27** — the finding
+  strengthening (whole pipeline table, not one chunk), NOT a regression. Bulk-label later, each
+  chunk satisfying metrics + grounding at once.
 - Then runner.py + optional judge. Do NOT declare the Phase-2 baseline until the grounding
   sample + census are reviewed. Corpus has **zero NCT IDs** (nct_id key-tier untested).
 - _(superseded sub-bullets retained below for the metrics design contract)_

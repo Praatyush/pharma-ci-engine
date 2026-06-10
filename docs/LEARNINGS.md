@@ -1,5 +1,29 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-10 — Grounding: region-inferred and map-gap are distinct from real failures
+
+`grounding.py` checks whether a predicted fact's cited `line_range` contains its salient tokens
+(closed enums via a reverse surface-form map: source "Approved"/"PhIII"/"Japan" ↔ enum
+`approval`/`3`/`JP`). A missing token has THREE distinct causes, reported as separate categories
+so a low grounding rate is not misread:
+
+- **real_failure** — genuinely absent (wrong line cited / fact not in the text): an
+  extraction-provenance fault.
+- **map_gap** — a recognizable surface IS present but the map doesn't bridge it (Novartis encodes
+  phase as a bare "3", which the map deliberately won't match — ambiguous with years): a fixable
+  token-map gap, NOT an extraction fault. So grounding pass-rate is **partly a map-coverage
+  measure**, not purely an extraction signal.
+- **inferred** (region only) — NO region word is in the cited text; the model asserted a region
+  the source never states. This is the **predicted-side mirror of golden policy 3** (we excluded
+  region-inferred programs from golden because the source didn't support the key). Grounding is
+  the layer that catches "the model asserts regions the text doesn't state" — so region grounding
+  is its own prominent number; a low rate is a FINDING.
+
+`line_range` is load-bearing; `snippet` is decorative and `snippet_fallback` (mashed-row chunk
+fallback) is EXPECTED, reported separately. **Also:** surface matching must be token-bounded —
+substring matching had the region surface `us` grounding inside "lupus"/"erythematosus"; fixed
+with `grounding._contains` (non-alphanumeric boundaries).
+
 ## 2026-06-10 — therapeutic_area is reported descriptively, NOT scored for accuracy
 
 **What:** `metrics.py` first scored `therapeutic_area` as a matched-program attribute (5
