@@ -1,5 +1,30 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-10 — indication_verbose: classify model over-specification, don't match it
+
+**What:** The model writes a program's indication as the disease PLUS population/setting
+("Pediatric on-demand and surgery treatment of von Willebrand disease"); golden (indication =
+disease only) is "von Willebrand disease". The fuzzy key doesn't bridge clean-vs-verbose.
+
+**Why NOT containment-match:** an asymmetric subset *match* would silently produce FALSE TPs —
+"von Willebrand disease" ⊆ "**acquired** von Willebrand disease" (congenital vs acquired = a
+different condition) would match and inflate recall invisibly. Same weak-alias-chaining failure
+as the IVIG over-merge and "Total".
+
+**Fix — classify, don't match.** A clean FP that agrees with a still-MISSED golden on every key
+field except indication, where the golden disease tokens (≥2 significant) ⊆ the predicted
+indication + extras, is reclassified to an `indication_verbose` FP subcategory (mirrors
+`key_incomplete`): the predicted leaves clean-FP (precision not charged a phantom), the golden
+**STAYS a miss** (recall never inflated — a narrowing case like "acquired X" is *visibly*
+bucketed for review, never a silent TP). Reported separately with both indication strings. The
+≥2-significant-token floor means single-token diseases ("Hemophilia A" → just "hemophilia")
+aren't auto-classified — conservative by design.
+
+**The real finding it surfaces (schema gap):** `Program` has `line_of_therapy`/`formulation`
+but **no population/setting field**, so the model has nowhere to put "pediatric / on-demand /
+surgery" except the indication string. That's a **schema-v2 / Phase-2-retrospective** lesson —
+NOT a mid-census change to the frozen schema. Named, not acted on.
+
 ## 2026-06-10 — Two key-normalizations: sub-phase collapse + region-indeterminate
 
 Surfaced by the Takeda pipeline table (census batch 1). One reusable pattern names both:

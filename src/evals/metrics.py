@@ -140,6 +140,7 @@ class TypeScore:
     fp: int = 0
     fn: int = 0
     key_incomplete: int = 0
+    indication_verbose: int = 0
     items: list[InspectItem] = field(default_factory=list)
 
     @property
@@ -209,7 +210,8 @@ def score_document(golden: GoldenDocument, result: Any, source_lines: list[str])
         pin = _collapse_by_key(raw, lambda f, k=_PRED_KEYS[t]: k(f, pidx))
         gin = _collapse_by_key(gold, lambda f, k=_GOLD_KEYS[t]: k(f, gidx))
         out = match_lists(pin, gin, t, pidx, gidx)
-        ts.tp, ts.fp, ts.fn, ts.key_incomplete = len(out.matched), len(out.false_positives), len(out.misses), len(out.key_incomplete)
+        ts.tp, ts.fp, ts.fn = len(out.matched), len(out.false_positives), len(out.misses)
+        ts.key_incomplete, ts.indication_verbose = len(out.key_incomplete), len(out.indication_verbose)
 
         for g in out.misses:
             ln, snip = _locate(source_lines, g_prov.get(id(g), (1, 1)), _g_keywords(t, g))
@@ -220,6 +222,10 @@ def score_document(golden: GoldenDocument, result: Any, source_lines: list[str])
         for p in out.key_incomplete:
             ts.items.append(InspectItem("key_incomplete", t, _summary(t, p, False),
                                         tuple(p.source_ref.line_range), p.source_ref.snippet[:160]))
+        for p in out.indication_verbose:
+            ts.items.append(InspectItem("indication_verbose", t, _summary(t, p, False),
+                                        tuple(p.source_ref.line_range), p.source_ref.snippet[:160],
+                                        detail="right disease + extra qualifiers (no schema population/setting field)"))
         for p, g in out.matched:
             for diff in _attribute_errors(t, p, g, golden.reporting_period):
                 ts.items.append(InspectItem("attribute_error", t, _summary(t, g, True),
@@ -324,14 +330,16 @@ def render_markdown(reports: list[dict[str, Any]]) -> str:
     agg: dict[str, TypeScore] = {t: TypeScore(t) for t in _FACT_TYPES}
     for rep in reports:
         for t, ts in rep["scores"].items():
-            agg[t].tp += ts.tp; agg[t].fp += ts.fp; agg[t].fn += ts.fn; agg[t].key_incomplete += ts.key_incomplete
+            agg[t].tp += ts.tp; agg[t].fp += ts.fp; agg[t].fn += ts.fn
+            agg[t].key_incomplete += ts.key_incomplete; agg[t].indication_verbose += ts.indication_verbose
 
     out.append("## Aggregate (all labeled chunks)")
-    out.append("| type | TP | FP | FN | KI | P | R | F1 |")
-    out.append("|---|--:|--:|--:|--:|--:|--:|--:|")
+    out.append("| type | TP | FP | FN | KI | IV | P | R | F1 |")
+    out.append("|---|--:|--:|--:|--:|--:|--:|--:|--:|")
     for t in _FACT_TYPES:
         s = agg[t]
-        out.append(f"| {t} | {s.tp} | {s.fp} | {s.fn} | {s.key_incomplete} | {s.precision:.2f} | {s.recall:.2f} | {s.f1:.2f} |")
+        out.append(f"| {t} | {s.tp} | {s.fp} | {s.fn} | {s.key_incomplete} | {s.indication_verbose} | "
+                   f"{s.precision:.2f} | {s.recall:.2f} | {s.f1:.2f} |")
     out.append("")
 
     for rep in reports:

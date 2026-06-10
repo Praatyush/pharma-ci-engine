@@ -113,6 +113,29 @@ def test_region_indeterminate_golden_matches_any_region():
     assert len(out.matched) == 1 and not out.misses and not out.false_positives
 
 
+def test_indication_verbose_classified_not_matched():
+    # model adds population/setting to the indication; golden is disease-only.
+    pidx = M.build_asset_index([_asset("tak-577", development_codes=["TAK-577"])])
+    gidx = M.build_golden_asset_index([GoldenAsset(identifiers=["TAK-577"])])
+    predicted = [_program("tak-577", "Pediatric on-demand treatment of von Willebrand disease", "JP", "approved")]
+    golden = [GoldenProgram(asset="TAK-577", indication="von Willebrand disease", region="JP", stage="approved")]
+    out = M.match_lists(predicted, golden, "programs", pidx, gidx)
+    assert not out.matched                       # NOT a TP — never inflate recall
+    assert len(out.misses) == 1                  # golden stays a miss (conservative)
+    assert len(out.indication_verbose) == 1      # predicted reclassified out of clean FP
+    assert not out.false_positives
+
+
+def test_narrowing_qualifier_is_visible_but_not_a_match():
+    # 'acquired vWD' contains 'vWD' but is a different condition: still NOT a TP (golden stays miss).
+    pidx = M.build_asset_index([_asset("x", development_codes=["X"])])
+    gidx = M.build_golden_asset_index([GoldenAsset(identifiers=["X"])])
+    predicted = [_program("x", "acquired von Willebrand disease", "JP", "approved")]
+    golden = [GoldenProgram(asset="X", indication="von Willebrand disease", region="JP", stage="approved")]
+    out = M.match_lists(predicted, golden, "programs", pidx, gidx)
+    assert not out.matched and len(out.misses) == 1  # recall NOT inflated either way
+
+
 def test_key_incomplete_separated_from_false_positive():
     # A predicted reg-event with indication='not specified' is under-specified (key-incomplete),
     # NOT a clean false positive; the golden it under-specifies stays a miss.

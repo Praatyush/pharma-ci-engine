@@ -305,6 +305,37 @@ def is_key_incomplete(entity: Any, entity_type: str) -> bool:
     return bool(getter) and any(is_null_sentinel(v) for v in getter(entity))
 
 
+def _indication_subset(gold_ind: str, pred_ind: str) -> bool:
+    """True if the golden disease is the predicted indication PLUS extra qualifiers.
+
+    Golden's significant tokens (>=2) all appear in the predicted indication, and the predicted
+    has strictly more — i.e. correct-disease + uncodeable context (population/setting). Detection
+    only: this never produces a TP (the golden stays a miss), so a narrowing case like
+    'acquired X' ⊇ 'X' is *visibly* bucketed for review, never a silent false match.
+    """
+    g = [t for t in canonical_term(gold_ind).split() if len(t) > 2]
+    p = [t for t in canonical_term(pred_ind).split() if len(t) > 2]
+    return len(g) >= 2 and len(p) > len(g) and all(t in p for t in g)
+
+
+def _matches_sans_indication(p: Any, g: Any, t: str, pidx: AssetIndex, gidx: AssetIndex) -> bool:
+    """Whether p and g agree on every KEY field except indication (for verbose detection)."""
+    if t == "programs":
+        return (_assets_overlap(pidx.cluster_slugs(p.asset_id), gidx.cluster_slugs(slug(g.asset)))
+                and (g.region is None or p.region == g.region)
+                and collapse_phase(p.stage) == collapse_phase(g.stage))
+    if t == "regulatory_events":
+        return (_assets_overlap(pidx.cluster_slugs(p.asset_id), gidx.cluster_slugs(slug(g.asset)))
+                and p.action == g.action and p.region == g.region)
+    if t == "trials":
+        if p.trial_name and g.trial_name:
+            return fuzzy_match(p.trial_name, g.trial_name)
+        ps = frozenset().union(*(pidx.cluster_slugs(a) for a in p.asset_ids)) if p.asset_ids else frozenset()
+        gs = frozenset().union(*(gidx.cluster_slugs(slug(a)) for a in g.assets)) if g.assets else frozenset()
+        return _assets_overlap(ps, gs) and collapse_phase(p.phase) == collapse_phase(g.phase)
+    return False
+
+
 @dataclass
 class MatchOutcome:
     """Alignment of collapsed predictions to golden labels for one entity type."""
@@ -313,6 +344,7 @@ class MatchOutcome:
     false_positives: list[Any]      # predicted with no golden match (a clean, keyable fact)
     misses: list[Any]               # golden with no predicted match
     key_incomplete: list[Any] = field(default_factory=list)  # predicted, unmatched, null-sentinel key
+    indication_verbose: list[Any] = field(default_factory=list)  # predicted: right disease + extra qualifiers
 
 
 def match_lists(
@@ -342,7 +374,21 @@ def match_lists(
                 break
     unmatched = [p for i, p in enumerate(predicted) if i not in used]
     key_incomplete = [p for p in unmatched if is_key_incomplete(p, entity_type)]
-    false_positives = [p for p in unmatched if not is_key_incomplete(p, entity_type)]
+    clean = [p for p in unmatched if not is_key_incomplete(p, entity_type)]
     matched_golden = {id(g) for _, g in matched}
     misses = [g for g in golden if id(g) not in matched_golden]
-    return MatchOutcome(matched, false_positives, misses, key_incomplete)
+
+    # Verbose-indication pass: a clean FP that matches a still-missed golden on every key field
+    # except indication, where the golden disease ⊆ the predicted indication + qualifiers, is
+    # reclassified out of clean FP (the golden STAYS a miss — never an inflated TP).
+    false_positives, indication_verbose = [], []
+    for p in clean:
+        p_ind = getattr(p, "indication", None)
+        if p_ind and any(
+            _matches_sans_indication(p, g, entity_type, pidx, gidx) and _indication_subset(g.indication, p_ind)
+            for g in misses
+        ):
+            indication_verbose.append(p)
+        else:
+            false_positives.append(p)
+    return MatchOutcome(matched, false_positives, misses, key_incomplete, indication_verbose)
