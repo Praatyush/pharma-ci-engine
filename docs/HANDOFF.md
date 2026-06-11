@@ -5,6 +5,42 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 3 Stage A — A2a chunk-leg retriever BUILT + eyeball-verified (2026-06-11)
+
+**AUTHORITATIVE STATUS:** **A2a (the chunk-leg retriever) is built and eyeball-verified; A2b (wire
+into the scorer → sliced recall@k → Gate A) is next.** This is the project's **first retrieval
+code**. Supersedes the A1 entry below as current state.
+
+### Built (`src/rag/` — first retrieval code)
+- `units.py` (leg-agnostic `RetrievalUnit(doc_id, line_range, text, kind, payload)`); `embeddings.py`
+  (**SOLE** `fastembed` importer; `EMBED_MODEL` configurable, local default `BAAI/bge-small-en-v1.5`);
+  `dense.py` (FAISS build/persist/load, cosine over L2-normalized, `id→unit` map + meta persisted);
+  `sparse.py` (`rank-bm25` + signal-preserving tokenizer — drug codes/acronyms kept whole);
+  `fusion.py` (RRF, `k_rrf=60`, no normalization/weight); `chunk_leg.py` (the retriever);
+  `verify_a2a.py` (the eyeball harness); `tests/rag/test_chunk_leg.py`. Full suite **106 passing**.
+- **Deps added (exactly 3, pre-approved by the locked design): `faiss-cpu`, `rank-bm25`, `fastembed`.**
+- Index: **134 chunk units** (Takeda 34 + Novartis 100 — the **full corpus**; the backbone indexes
+  everything, incl. un-extracted regions), persisted to **gitignored `data/rag/`** (never committed).
+
+### Eyeball-verified (A2a gate — NOT scored)
+- Machinery sane: `bge-small-en-v1.5` (dim 384), FAISS reloads, BM25 keeps `TAK-861`/`VAYHIA`/`Lp(a)`
+  whole. **Q8** (known-item) golden chunk @rank 2 **YES**; **Q7** (trial) @rank 1 **YES** (the
+  `ianalumab` exact token pulled it despite the haemolytic/hemolytic spelling gap — BM25 earning its
+  place); **Q4** (aggregate) **NO** — the aggregate-dilution finding below.
+
+### Pre-Gate-A finding (feeds the decision, NOT a fix-now)
+- **Q4 aggregate dilution:** coarse 1500/200 chunks bury a sparse-TA's pipeline rows in a mixed-TA
+  table, so the CV pipeline chunk didn't surface top-5. The concrete data point for the §A.6
+  finer-chunk decision — **to be made on A2b's full sliced recall@k, not now**; machinery is sound,
+  this is a retrieval-quality signal. See LEARNINGS 2026-06-11 (aggregate dilution).
+
+### Next — A2b (Gate A)
+- Wire the verified retriever into the verified scorer (`retrieval_scorer.py` is leg-agnostic and
+  ready), produce the sliced **recall@{1,3,5,10}** curve + the containment distribution that
+  resolves the **T decision** (§A.6). That is Gate A.
+
+---
+
 ## Phase 3 Stage A — A1 shared scorer BUILT + VERIFIED (2026-06-11)
 
 **AUTHORITATIVE STATUS:** **Stage A sub-step A1 (the shared retrieval scorer) is built and verified;

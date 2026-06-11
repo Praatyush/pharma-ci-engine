@@ -1,5 +1,27 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-11 — Aggregate dilution: coarse chunks bury a sparse-TA's rows (pre-Gate-A finding)
+
+**What:** In the A2a chunk-leg eyeball, the retriever surfaced the right chunk for the known-item
+(Q8, rank 2) and trial (Q7, rank 1) queries, but for the **aggregate** query Q4 ("Novartis
+cardiovascular / lipid-lowering pipeline") the golden's CV-pipeline chunks (993,1031)/(1032,1064)
+**did NOT make top-5**.
+
+**Why (mechanism, not a bug):** those chunks are the forward "pipeline projects" table, which spans
+**all** therapeutic areas; the CV/lipid rows (Leqvio, abelacimab, pacibekitug, QCZ484, pelacarsen,
+DII235, LTP001) are a **~7-of-~30 minority**. A 1500-char chunk's single dense vector averages over
+the whole mixed-TA table, so the CV signal is diluted. The query instead pulled the chunk that is
+*densely, explicitly* CV — the **marketed** "CARDIOVASCULAR, RENAL AND METABOLIC" product commentary
+(L367-431) — topically right, but not where the golden placed the forward-pipeline answer.
+
+**Why it's a finding feeding Gate A, NOT a fix-now:** this is exactly the aggregate-over-distributed-
+rows hazard the seed set flagged for Q4, and the concrete data point for the `RETRIEVAL_PLAN.md`
+§A.6 finer-retrieval-chunk decision (coarse 1500/200 can't isolate a sparse TA's rows; finer units
+would). That decision is **locked to Gate A, made on A2b's FULL sliced recall@k — not on one
+eyeball**. Do **not** re-chunk now. The machinery is sound (Q7/Q8 hit, drug tokens preserved, index
+reloads — the silent-garbage modes are ruled out); Q4's miss is a genuine retrieval-quality signal,
+logged so A2b/Gate A reads the recall curve with this hypothesis already in hand.
+
 ## 2026-06-11 — T (containment threshold), third appearance: coarse units reproduce bimodality
 
 **What:** The containment threshold **T** has now resisted calibration **three** times, and the

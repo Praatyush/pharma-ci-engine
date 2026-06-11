@@ -6,11 +6,14 @@ requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2",   # domain schema + structured-output extraction (v2)
     "google-genai",  # Gemini SDK — LLM structured-output extraction
+    # Phase 3 RAG (Stage A2a): hybrid chunk retrieval.
+    "faiss-cpu",     # dense vector index (build/persist/load)
+    "rank-bm25",     # keyword/BM25 leg of hybrid retrieval
+    "fastembed",     # local, quota-free embeddings (isolated in src/rag/embeddings.py)
 ]
 
 # Phase-scoped deps are added when their phase starts (see ARCHITECTURE.md
-# "Build order"): faiss-cpu + rank-bm25 (Phase 3 RAG), httpx (Phase 4 tools),
-# pdfplumber (deferred with PDF ingestion).
+# "Build order"): httpx (Phase 4 tools), pdfplumber (deferred with PDF ingestion).
 
 [project.optional-dependencies]
 dev = ["pytest"]
