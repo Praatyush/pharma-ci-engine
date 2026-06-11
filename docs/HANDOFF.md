@@ -5,6 +5,52 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 3 Stage A — Gate A REVIEWED + RATIFIED (2026-06-11)
+
+**AUTHORITATIVE STATUS:** **Gate A reviewed + ratified (T inert; finer-chunk deferred post-Stage-B;
+Stage A shippable); Stage B (entity leg) next.** A2b joined the verified retriever (A2a) to the
+verified scorer (A1), the Gate-A artifact was produced and reviewed, and the decisions below are
+recorded. Supersedes the A2a entry below as current state.
+
+### Integration built
+- `src/evals/retrieval_run.py` (`python -m src.evals.retrieval_run`) — wires `rag.chunk_leg` →
+  `evals.retrieval_scorer` (**changed neither**; reused `line_containment` as the one overlap impl),
+  scores all 9 scored golden queries (Q2 §7-excluded), and writes a pinned sliced report to
+  **gitignored** `data/eval/reports/retrieval_gate_a.{json,md}` (regenerable; not committed). Suite
+  **106 passing**.
+
+### T-decision RATIFIED — structurally inert at chunk grain (deferred-with-trigger CLOSED)
+- The golden-lock's deferred-with-trigger T decision (calibrate against the first real index)
+  **resolves here as "inert."** Gate-A containment over the retrieved top-10 was **degenerate-bimodal**
+  — of 37 golden spans, **29 ≈1.0, 8 ≈0.0, 0 fractional** — and macro recall@k was **identical at
+  T=0.5 and T=0.99**. recall@k is therefore **threshold-independent for sub-chunk spans**: a finding,
+  not a gap. **No T is pinned.** See LEARNINGS 2026-06-11 (Gate A).
+
+### Gate-A chunk-leg BASELINE result (lead with the localization — the plasma discipline)
+- **Localized:** strong on single/set-of-singles (**1.0 by @10**, mostly @1–3), weak on
+  aggregate/comparison (**near-zero until @10**). The weakness **localizes to coarse-chunk dilution**
+  of signal spread-across / buried-within mixed-content tables (Q4 CV pipeline; Q5's buried *extracted*
+  IgAN assets). Macro recall@k {@1 **0.518**, @3 **0.741**, @5 **0.741**, @10 **0.903**} is **always
+  reported sliced by type, never as the bare macro number**.
+- **Backbone confirmed empirically:** the chunk leg **reached un-extracted Vanrafia at rank 6** (the
+  approved IgAN asset the entity leg structurally cannot see) while **missing the three *extracted*
+  IgAN assets** (mezagitamab r29, Fabhalta r18, zigakibart r49) buried in mashed tables. Reachability
+  backbone validated; the **Stage-B hypothesis is identified** — the entity leg is hypothesized to
+  help on *extracted-but-table-buried structured facts*.
+- **Finer-chunk lever (§A.6) DEFERRED to post-Stage-B:** the aggregate/comparison gap partly overlaps
+  Stage B's target (buried extracted facts), so re-chunking now would **confound** the entity-leg
+  measurement. Re-evaluate after Stage B; a still-open lever, **NOT actioned**.
+- **Stage A is shippable as a standalone Phase-3 result** (strong localized recall + explained
+  localized weakness + resolved T + confirmed backbone), independent of whatever Stage B returns.
+
+### Next — Stage B (entity leg)
+- Build the entity index over extracted facts + the per-leg decomposition (chunk-only vs entity-only
+  vs fused), measured against this Gate-A baseline in the extracted slice; **null contribution is the
+  locked-acceptable outcome**. The scorer is leg-agnostic and ready. Do **NOT** touch chunk config /
+  k_rrf / embedding / T (would confound A-vs-B).
+
+---
+
 ## Phase 3 Stage A — A2a chunk-leg retriever BUILT + eyeball-verified (2026-06-11)
 
 **AUTHORITATIVE STATUS:** **A2a (the chunk-leg retriever) is built and eyeball-verified; A2b (wire

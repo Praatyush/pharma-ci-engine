@@ -1,5 +1,35 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-11 — Gate A: chunk-leg baseline + the T thread RESOLVED (inert at chunk grain)
+
+**What:** Gate A (A2b — the real retriever × the verified scorer over the 9 scored golden queries)
+produced the chunk-leg baseline and **closed the T thread**. T's deferred-with-trigger decision
+(golden lock → "calibrate on the first real index") **resolves as structurally inert at chunk
+grain**: containment over the retrieved top-10 was degenerate-bimodal — **29 spans ≈1.0, 8 ≈0.0,
+0 fractional** (of 37) — and macro recall@k was **identical at T=0.5 and T=0.99**. recall@k is
+therefore threshold-independent for sub-chunk spans. **No T pinned** — the trigger fired and the
+answer was "there is nothing to calibrate."
+
+**Why (mechanism, now measured not predicted):** short golden spans sit inside coarse 1500/200
+chunks, so a retrieved unit either fully contains a span (1.0) or doesn't overlap it (0.0) — no
+fractional middle for a threshold to act on. This confirms the §A.6 prediction **on real retrieval**
+(not stand-in units): the fourth and final appearance of the T-problem, resolved as a finding.
+
+**Baseline result — lead with the localization (the plasma discipline):** the chunk leg is **strong
+on localized facts** (single/set-of-singles → 1.0 by @10, mostly @1–3) and **weak on
+distributed/relational answers** (aggregate Q4, comparison Q5 → near-zero until @10). The weakness is
+NOT diffuse — it **localizes to coarse-chunk dilution** of a signal spread across or buried within
+mixed-content tables. Always report **sliced by type**; the bare macro {@1 0.518, @3 0.741, @5 0.741,
+@10 0.903} hides the localization.
+
+**Backbone validated + the Stage-B hypothesis:** the chunk leg reached **un-extracted Vanrafia at
+rank 6** (via its clean prose) — the asset the entity leg structurally cannot reach — while **missing
+the three *extracted* IgAN assets** (mashed table rows). So chunk retrieval is the reachability
+backbone (confirmed), and the entity leg's hypothesized value is precisely the
+**extracted-but-table-buried structured facts** the chunk text dilutes. The finer-chunk lever (§A.6)
+is **deferred post-Stage-B**: re-chunking now would confound the entity-leg measurement (the gap
+partly IS Stage B's target). Stage A stands as a shippable standalone Phase-3 result.
+
 ## 2026-06-11 — Aggregate dilution: coarse chunks bury a sparse-TA's rows (pre-Gate-A finding)
 
 **What:** In the A2a chunk-leg eyeball, the retriever surfaced the right chunk for the known-item
