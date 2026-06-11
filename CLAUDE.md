@@ -1,9 +1,10 @@
 # CLAUDE.md — Operating Rules (root, source of truth)
 
-`pharma-ci-engine` — an oncology competitive-intelligence engine that ingests
-dense pharma documents + live clinical/regulatory data, extracts them into a
-structured domain model, retrieves over that corpus, and answers CI questions
-with **grounded, cited** output measured by an offline eval harness.
+`pharma-ci-engine` — a multi-therapeutic-area pharma competitive-intelligence
+engine that ingests dense pharma documents + live clinical/regulatory data,
+extracts them into a structured domain model, retrieves over that corpus, and
+answers CI questions with **grounded, cited** output measured by an offline eval
+harness.
 
 **Design source of truth: `docs/ARCHITECTURE.md`.** That file owns the system
 design (modules, data flow, schema, build order). This file owns the *how* —
@@ -52,8 +53,9 @@ pytest tests/ -k <expr> -q      # focused run
 - **NEVER commit `.env` or API keys.** Only `.env.example` (placeholders) is
   tracked. `.env` is gitignored — keep it that way.
 - **Never hardcode secrets** in source. Read them from the environment.
-- `data/` is gitignored: sample PDFs and the FAISS index must never be
-  committed.
+- `data/` is gitignored: the markdown corpus (`data/reports/`) and the FAISS
+  index must never be committed. (PDF source files are deferred — v1 ingests
+  markdown.)
 
 ## Do NOT replicate v0 (`docs/V0_ARCHITECTURE.md` is context only)
 
@@ -67,7 +69,8 @@ away from all of it. Do not reintroduce:
 - freeform `.txt` output
 
 This system is CLI / library-first, retrieval-based, structured, evaluated, and
-domain-pivoted to **oncology clinical-lifecycle intelligence**.
+domain-pivoted to **multi-therapeutic-area (multi-TA) clinical-lifecycle
+intelligence**.
 
 ## SELF-IMPROVEMENT PROTOCOL
 
@@ -84,7 +87,11 @@ When you fix a non-obvious bug or discover a project convention or gotcha:
 
 - Build in **phases**; stop for review after each (see `ARCHITECTURE.md` →
   "Build order"). Do not run end-to-end.
-- **Ask before adding any dependency** not already in `requirements.txt`.
+- **Ask before adding any dependency** not already in `pyproject.toml`.
 - Commit per phase with clear messages; never commit secrets.
-- At the end of every phase, create/update `docs/HANDOFF.md` (work completed,
-  decisions, files changed, outstanding issues, recommended next step).
+- **Keep `docs/HANDOFF.md` current — not only `docs/LEARNINGS.md`.** At the end of
+  every phase, **and at any commit that changes a locked decision or the build
+  state**, update `HANDOFF.md` so its newest entry reflects the new current state
+  and the next step (work completed, decisions, files changed, outstanding issues).
+  LEARNINGS records gotchas; HANDOFF records where the project *is* — both must stay
+  current, or sessions resume from a stale plan.

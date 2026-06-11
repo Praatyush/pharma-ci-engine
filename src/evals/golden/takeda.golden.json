@@ -1,0 +1,266 @@
+{
+  "golden_schema_version": "1",
+  "document_id": "qr2025_q4_Pipeline_table_en",
+  "source_company": "Takeda",
+  "artifact": "qr2025_q4_Pipeline_table_en.extraction.json",
+  "reporting_period": "FY2025 Q4",
+  "as_of_date": "2026-05-13",
+  "labeled_chunks": [
+    {
+      "chunk_index": 14,
+      "line_range": [699, 733],
+      "note": "Section II 'Recent Pipeline Progress in stage'. LABELING POLICY (to confirm): (1) a stage-progress row stating a regulatory action + date + region is labeled as BOTH a Program (the new stage) and a RegulatoryEvent (the action). (2) Reference-only footnote assets (Olverembatinib/HQP1351, ACI-24.060, IBI3001) are labeled as assets — their identity + originator are stated — but yield no Program/RegulatoryEvent here. (3) The B7H3 / solid-tumors fragment (lines 699-702) has no in-chunk asset identifier, so nothing is labeled from it. (4) Japan approvals name no agency in-source; agency is a scored attribute, labeled MHLW for marketing approval / PMDA for a filing.",
+      "assets": [
+        {"identifiers": ["TAK-961", "10% IVIG"]},
+        {"identifiers": ["TAK-577"]},
+        {"identifiers": ["TAK-861", "oveporexton"]},
+        {"identifiers": ["Olverembatinib", "HQP1351"]},
+        {"identifiers": ["ACI-24.060"]},
+        {"identifiers": ["IBI3001"]}
+      ],
+      "programs": [
+        {"asset": "TAK-961", "indication": "Multiple Indications", "region": "JP", "stage": "approved", "therapeutic_area": "immunology"},
+        {"asset": "TAK-577", "indication": "von Willebrand disease", "region": "JP", "stage": "approved", "therapeutic_area": "hematology"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "JP", "stage": "filed", "therapeutic_area": "neuroscience"}
+      ],
+      "regulatory_events": [
+        {"asset": "TAK-961", "action": "approval", "indication": "Multiple Indications", "region": "JP", "agency": "MHLW", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-577", "action": "approval", "indication": "von Willebrand disease", "region": "JP", "agency": "MHLW", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-861", "action": "filed", "indication": "Narcolepsy type 1", "region": "JP", "agency": "PMDA", "date": "Mar 2026", "from_progress_row": true}
+      ]
+    },
+    {
+      "chunk_index": 12,
+      "line_range": [537, 618],
+      "note": "Plasma-Derived Therapies main pipeline table. Targets the IVIG over-merge cluster: TAK-961/TAK-339/TAK-771/TAK-880/TAK-330 are DISTINCT molecules (distinct dev codes + distinct brands) — golden lists each separately, EXCLUDING the shared class names ('IVIG','10% IVIG') from identifiers so golden truth does not itself over-merge. Note TAK-339 brand 'GAMMAGARD LIQUID' vs TAK-880 'GAMMAGARD LIQUID ERC' (distinct). Main-table status cells ('Approved (Feb 2026)', 'Filed (Oct 2025)') are dual-encoded as Program (stage) + RegulatoryEvent (action), from_progress_row=true. The lines 537-542 fragment (small-molecule CMV row, no in-chunk identifier) and TAK-330 (cut off at 618, no facts) follow policy (c)/identity-only. 'PROTHROMPLEX TOTAL' brand confirms 'Total' is not a self-reference.",
+      "assets": [
+        {"identifiers": ["TAK-961", "KENKETU GLOVENIN-I"], "modality": "plasma_derived"},
+        {"identifiers": ["TAK-339", "GLOVENIN-I", "GAMMAGARD LIQUID"], "modality": "plasma_derived"},
+        {"identifiers": ["TAK-771", "HYQVIA"], "modality": "plasma_derived"},
+        {"identifiers": ["TAK-880", "GAMMAGARD LIQUID ERC", "DEQSIGA"], "modality": "plasma_derived"},
+        {"identifiers": ["TAK-330", "PROTHROMPLEX TOTAL"], "modality": "plasma_derived"}
+      ],
+      "programs": [
+        {"asset": "TAK-961", "indication": "Multiple Indications", "region": "JP", "stage": "approved", "therapeutic_area": "immunology"},
+        {"asset": "TAK-961", "indication": "Autoimmune Encephalitis", "region": "JP", "stage": "filed", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-339", "indication": "Multiple Indications", "region": "JP", "stage": "approved", "therapeutic_area": "immunology"},
+        {"asset": "TAK-339", "indication": "Autoimmune Encephalitis", "region": "JP", "stage": "filed", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-339", "indication": "Secondary Immunodeficiencies", "region": "US", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "TAK-771", "indication": "Chronic inflammatory demyelinating polyradiculoneuropathy and multifocal motor neuropathy", "region": "JP", "stage": "approved", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-880", "indication": "Primary Immunodeficiencies", "region": "US", "stage": "approved", "therapeutic_area": "immunology"},
+        {"asset": "TAK-880", "indication": "Primary Immunodeficiencies", "region": "EU", "stage": "approved", "therapeutic_area": "immunology"}
+      ],
+      "regulatory_events": [
+        {"asset": "TAK-961", "action": "approval", "indication": "Multiple Indications", "region": "JP", "agency": "MHLW", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-961", "action": "filed", "indication": "Autoimmune Encephalitis", "region": "JP", "agency": "PMDA", "date": "Oct 2025", "from_progress_row": true},
+        {"asset": "TAK-339", "action": "approval", "indication": "Multiple Indications", "region": "JP", "agency": "MHLW", "date": "July 2025", "from_progress_row": true},
+        {"asset": "TAK-339", "action": "filed", "indication": "Autoimmune Encephalitis", "region": "JP", "agency": "PMDA", "date": "Oct 2025", "from_progress_row": true},
+        {"asset": "TAK-771", "action": "approval", "indication": "Chronic inflammatory demyelinating polyradiculoneuropathy and multifocal motor neuropathy", "region": "JP", "agency": "MHLW", "date": "June 2025", "from_progress_row": true},
+        {"asset": "TAK-880", "action": "approval", "indication": "Primary Immunodeficiencies", "region": "US", "agency": "FDA", "date": "June 2025", "from_progress_row": true},
+        {"asset": "TAK-880", "action": "approval", "indication": "Primary Immunodeficiencies", "region": "EU", "agency": "EMA", "date": "May 2025", "from_progress_row": true}
+      ]
+    },
+    {
+      "chunk_index": 8,
+      "line_range": [202, 301],
+      "note": "Main pipeline table (header + rows). Region '-' = not region-specific -> Global (consistent with Novartis ch32 'region not stated -> Global'; distinct from ch29 column-position inference). Only TAK-755 cTTP 'China Filed (Mar 2025)' is a regulatory action (dual-encoded, from_progress_row=true); the rest are P-stage rows. MLN0002 pediatric IV+SC share the (asset,indication,region,stage) key -> one program. TAK-101 cut off at 301 -> asset only.",
+      "assets": [
+        {"identifiers": ["TAK-755", "rADAMTS13", "ADZYNMA"], "modality": "recombinant protein", "target": "ADAMTS13"},
+        {"identifiers": ["MLN0002", "vedolizumab", "ENTYVIO"], "modality": "mAb", "target": "alpha4beta7 integrin"},
+        {"identifiers": ["TAK-999", "fazirsiran"], "modality": "siRNA/RNAi"},
+        {"identifiers": ["TAK-279", "zasocitinib"], "modality": "small_molecule", "target": "TYK2"},
+        {"identifiers": ["TAK-079", "mezagitamab"], "modality": "mAb", "target": "CD38"},
+        {"identifiers": ["TAK-227 / ZED1227", "TAK-227", "ZED1227"], "modality": "small_molecule", "target": "Transglutaminase 2"},
+        {"identifiers": ["TAK-101"]}
+      ],
+      "programs": [
+        {"asset": "TAK-755", "indication": "Congenital Thrombotic Thrombocytopenic Purpura", "region": "CN", "stage": "filed", "therapeutic_area": "hematology"},
+        {"asset": "MLN0002", "indication": "ulcerative colitis and Crohn's disease", "region": "Global", "stage": "P3", "therapeutic_area": "gastroenterology"},
+        {"asset": "TAK-999", "indication": "Alpha-1 antitrypsin-deficiency associated liver disease", "region": "US", "stage": "P3", "therapeutic_area": "hepatology"},
+        {"asset": "TAK-999", "indication": "Alpha-1 antitrypsin-deficiency associated liver disease", "region": "EU", "stage": "P3", "therapeutic_area": "hepatology"},
+        {"asset": "TAK-279", "indication": "Psoriasis", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "TAK-279", "indication": "Pediatric psoriasis", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "TAK-279", "indication": "Psoriatic arthritis", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "TAK-279", "indication": "Crohn's disease", "region": null, "stage": "P2b", "therapeutic_area": "gastroenterology"},
+        {"asset": "TAK-279", "indication": "Ulcerative colitis", "region": null, "stage": "P2b", "therapeutic_area": "gastroenterology"},
+        {"asset": "TAK-279", "indication": "Vitiligo", "region": null, "stage": "P2b", "therapeutic_area": "immunology"},
+        {"asset": "TAK-279", "indication": "Hidradenitis suppurativa", "region": null, "stage": "P2a", "therapeutic_area": "immunology"},
+        {"asset": "TAK-079", "indication": "Immune thrombocytopenia", "region": "Global", "stage": "P3", "therapeutic_area": "hematology"},
+        {"asset": "TAK-079", "indication": "Immunoglobulin A nephropathy", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "TAK-227", "indication": "Celiac disease", "region": null, "stage": "P2b", "therapeutic_area": "gastroenterology"}
+      ],
+      "regulatory_events": [
+        {"asset": "TAK-755", "action": "filed", "indication": "Congenital Thrombotic Thrombocytopenic Purpura", "region": "CN", "agency": "NMPA", "date": "Mar 2025", "from_progress_row": true}
+      ]
+    },
+    {
+      "chunk_index": 9,
+      "line_range": [302, 389],
+      "note": "Tail of immunology/GI table (TAK-101 TIMP, TAK-781) + Neuroscience Pipeline + start of Oncology (SGN-35 cut off). Region '-' -> Global. TAK-861 Narcolepsy type 1 region-split filings: JP Filed (Mar 2026) / US Filed (Feb 2026) / CN Filed (Jan 2026) [policy 1: three reg-events] + EU still P-III. TAK-755 acute ischemic stroke P2 + an unnamed Phase-2 trial (footnote *2). TAK-495 has no indication in-source ('- - P-I') -> asset only.",
+      "assets": [
+        {"identifiers": ["TAK-781"], "modality": "siRNA/RNAi", "target": "CYP7A1"},
+        {"identifiers": ["TAK-861", "oveporexton"], "modality": "small_molecule", "target": "Orexin 2R"},
+        {"identifiers": ["TAK-755", "rADAMTS13"], "modality": "recombinant protein", "target": "ADAMTS13"},
+        {"identifiers": ["TAK-360"], "modality": "small_molecule", "target": "Orexin 2R"},
+        {"identifiers": ["TAK-495"], "modality": "small_molecule", "target": "Orexin 2R"},
+        {"identifiers": ["SGN-35", "brentuximab vedotin"]}
+      ],
+      "programs": [
+        {"asset": "TAK-101", "indication": "Celiac disease", "region": null, "stage": "P2", "therapeutic_area": "gastroenterology"},
+        {"asset": "TAK-781", "indication": "Primary sclerosing cholangitis", "region": null, "stage": "P1", "therapeutic_area": "hepatology"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "JP", "stage": "filed", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "US", "stage": "filed", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "CN", "stage": "filed", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "EU", "stage": "P3", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-755", "indication": "Acute ischemic stroke", "region": null, "stage": "P2", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-360", "indication": "Idiopathic hypersomnia", "region": null, "stage": "P2", "therapeutic_area": "neuroscience"},
+        {"asset": "TAK-360", "indication": "Narcolepsy type 2", "region": null, "stage": "P2", "therapeutic_area": "neuroscience"}
+      ],
+      "trials": [
+        {"assets": ["TAK-755"], "indication": "Acute ischemic stroke", "phase": "2", "met_primary_endpoint": null}
+      ],
+      "regulatory_events": [
+        {"asset": "TAK-861", "action": "filed", "indication": "Narcolepsy type 1", "region": "JP", "agency": "PMDA", "date": "Mar 2026", "from_progress_row": true},
+        {"asset": "TAK-861", "action": "filed", "indication": "Narcolepsy type 1", "region": "US", "agency": "FDA", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-861", "action": "filed", "indication": "Narcolepsy type 1", "region": "CN", "agency": "NMPA", "date": "Jan 2026", "from_progress_row": true}
+      ]
+    },
+    {
+      "chunk_index": 10,
+      "line_range": [390, 467],
+      "note": "Oncology pipeline. Region '-' -> null (indeterminate). ADCETRIS = brentuximab vedotin (clusters with ch9 SGN-35). Status cells -> dual-encoded reg-events (from_progress_row=true): ADCETRIS EU approval, TAK-121 US filing, TAK-853 JP filing. LoT prefixes (2L/3L) kept in the indication cell as the source writes them.",
+      "assets": [
+        {"identifiers": ["ADCETRIS", "brentuximab vedotin"], "modality": "ADC", "target": "CD30"},
+        {"identifiers": ["TAK-121", "rusfertide"], "modality": "peptide"},
+        {"identifiers": ["TAK-853", "mirvetuximab soravtansine-gynx"], "modality": "ADC", "target": "folate receptor alpha"},
+        {"identifiers": ["TAK-226", "elritercept"], "modality": "ligand trap", "target": "Activin A/B"},
+        {"identifiers": ["TAK-928 / IBI363", "TAK-928", "IBI363"], "modality": "bispecific", "target": "PD-1/IL-2"},
+        {"identifiers": ["TAK-921 / IBI343", "TAK-921", "IBI343"], "modality": "ADC", "target": "Claudin 18.2"},
+        {"identifiers": ["TAK-168 / KQB168", "TAK-168", "KQB168"], "modality": "small_molecule"}
+      ],
+      "programs": [
+        {"asset": "ADCETRIS", "indication": "Front line Hodgkin's lymphoma", "region": "EU", "stage": "approved", "therapeutic_area": "oncology"},
+        {"asset": "TAK-121", "indication": "Polycythemia vera", "region": "US", "stage": "filed", "therapeutic_area": "hematology"},
+        {"asset": "TAK-853", "indication": "Platinum-resistant ovarian cancer", "region": "JP", "stage": "filed", "therapeutic_area": "oncology"},
+        {"asset": "TAK-853", "indication": "Platinum-sensitive ovarian cancer", "region": "JP", "stage": "P3", "therapeutic_area": "oncology"},
+        {"asset": "TAK-226", "indication": "2L anemia-associated Myelodysplastic Syndrome", "region": "Global", "stage": "P3", "line_of_therapy": "2L", "therapeutic_area": "hematology"},
+        {"asset": "TAK-226", "indication": "Anemia-associated Myelofibrosis", "region": null, "stage": "P2", "therapeutic_area": "hematology"},
+        {"asset": "TAK-928", "indication": "2L squamous Non-Small Cell Lung Cancer", "region": "Global", "stage": "P3", "line_of_therapy": "2L", "therapeutic_area": "oncology"},
+        {"asset": "TAK-928", "indication": "Solid Tumors", "region": null, "stage": "P2", "therapeutic_area": "oncology"},
+        {"asset": "TAK-921", "indication": "3L Gastric Cancer", "region": "JP", "stage": "P3", "line_of_therapy": "3L", "therapeutic_area": "oncology"},
+        {"asset": "TAK-921", "indication": "3L Gastric Cancer", "region": "CN", "stage": "P3", "line_of_therapy": "3L", "therapeutic_area": "oncology"},
+        {"asset": "TAK-921", "indication": "Solid Tumors", "region": null, "stage": "P1", "therapeutic_area": "oncology"},
+        {"asset": "TAK-168", "indication": "Solid Tumors", "region": null, "stage": "P1", "therapeutic_area": "oncology"}
+      ],
+      "regulatory_events": [
+        {"asset": "ADCETRIS", "action": "approval", "indication": "Front line Hodgkin's lymphoma", "region": "EU", "agency": "EMA", "date": "June 2025", "from_progress_row": true},
+        {"asset": "TAK-121", "action": "filed", "indication": "Polycythemia vera", "region": "US", "agency": "FDA", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-853", "action": "filed", "indication": "Platinum-resistant ovarian cancer", "region": "JP", "agency": "PMDA", "date": "Jan 2026", "from_progress_row": true}
+      ]
+    },
+    {
+      "chunk_index": 11,
+      "line_range": [468, 536],
+      "note": "Tail of oncology (TAK-188) + Other Rare Diseases Pipeline. indication = DISEASE ONLY: 'Pediatric on-demand and surgery / prophylactic treatment of von Willebrand disease' -> 'von Willebrand disease' (population/setting are not the indication). TAK-577 vWD region/stage split (JP/US/EU approved + EU P3 surgery + Global P3 prophylactic). TAK-620 cut off at 536 -> asset only.",
+      "assets": [
+        {"identifiers": ["TAK-188"], "modality": "ADC", "target": "CCR8"},
+        {"identifiers": ["TAK-577", "VONVENDI", "VEYVONDI"], "modality": "recombinant protein", "target": "von Willebrand factor"},
+        {"identifiers": ["TAK-660", "ADYNOVATE", "ADYNOVI"], "modality": "recombinant protein", "target": "Factor VIII"},
+        {"identifiers": ["TAK-620", "maribavir", "LIVTENCITY"], "modality": "small_molecule"}
+      ],
+      "programs": [
+        {"asset": "TAK-188", "indication": "Solid Tumors", "region": null, "stage": "P1", "therapeutic_area": "oncology"},
+        {"asset": "TAK-577", "indication": "von Willebrand disease", "region": "JP", "stage": "approved", "therapeutic_area": "hematology"},
+        {"asset": "TAK-577", "indication": "von Willebrand disease", "region": "US", "stage": "approved", "therapeutic_area": "hematology"},
+        {"asset": "TAK-577", "indication": "von Willebrand disease", "region": "EU", "stage": "approved", "therapeutic_area": "hematology"},
+        {"asset": "TAK-577", "indication": "von Willebrand disease", "region": "EU", "stage": "P3", "therapeutic_area": "hematology"},
+        {"asset": "TAK-577", "indication": "von Willebrand disease", "region": "Global", "stage": "P3", "therapeutic_area": "hematology"},
+        {"asset": "TAK-660", "indication": "Hemophilia A", "region": "CN", "stage": "filed", "therapeutic_area": "hematology"},
+        {"asset": "TAK-660", "indication": "Hemophilia A", "region": "EU", "stage": "P3", "therapeutic_area": "hematology"}
+      ],
+      "regulatory_events": [
+        {"asset": "TAK-577", "action": "approval", "indication": "von Willebrand disease", "region": "JP", "agency": "MHLW", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-577", "action": "approval", "indication": "von Willebrand disease", "region": "US", "agency": "FDA", "date": "Sept 2025", "from_progress_row": true},
+        {"asset": "TAK-577", "action": "approval", "indication": "von Willebrand disease", "region": "EU", "agency": "EMA", "date": "Dec 2025", "from_progress_row": true},
+        {"asset": "TAK-660", "action": "filed", "indication": "Hemophilia A", "region": "CN", "agency": "NMPA", "date": "July 2025", "from_progress_row": true}
+      ]
+    },
+    {
+      "chunk_index": 15,
+      "line_range": [734, 806],
+      "note": "Section II 'Recent Pipeline Progress' (Q3/Q2 FY2025 updates) — progress-row restatements, from_progress_row=true. Most facts DEDUP with the main-table chunks 8-12 via the union; carries the plasma codes (TAK-339/961). region '-' -> null; indication = disease only. Reg-events here test the plasma thesis: Flash-Lite extracted 0 reg-events from this chunk (per-chunk), same as ch12's 0/7.",
+      "assets": [
+        {"identifiers": ["TAK-921 / IBI343", "TAK-921", "IBI343"]},
+        {"identifiers": ["TAK-928 / IBI363", "TAK-928", "IBI363"]}
+      ],
+      "programs": [
+        {"asset": "TAK-121", "indication": "Polycythemia vera", "region": "US", "stage": "filed"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "US", "stage": "filed"},
+        {"asset": "TAK-853", "indication": "Platinum-resistant ovarian cancer", "region": "JP", "stage": "filed"},
+        {"asset": "TAK-339", "indication": "Secondary Immunodeficiencies", "region": "US", "stage": "P3"},
+        {"asset": "TAK-755", "indication": "Acute ischemic stroke", "region": null, "stage": "P2"},
+        {"asset": "TAK-279", "indication": "Hidradenitis suppurativa", "region": null, "stage": "P2a"},
+        {"asset": "TAK-577", "indication": "von Willebrand disease", "region": "EU", "stage": "approved"},
+        {"asset": "TAK-861", "indication": "Narcolepsy type 1", "region": "CN", "stage": "filed"},
+        {"asset": "TAK-961", "indication": "Autoimmune Encephalitis", "region": "JP", "stage": "filed"},
+        {"asset": "TAK-339", "indication": "Autoimmune Encephalitis", "region": "JP", "stage": "filed"},
+        {"asset": "TAK-279", "indication": "Pediatric psoriasis", "region": "Global", "stage": "P3"},
+        {"asset": "TAK-921", "indication": "3L Gastric Cancer", "region": "JP", "stage": "P3", "line_of_therapy": "3L"},
+        {"asset": "TAK-921", "indication": "3L Gastric Cancer", "region": "CN", "stage": "P3", "line_of_therapy": "3L"},
+        {"asset": "TAK-928", "indication": "2L squamous Non-Small Cell Lung Cancer", "region": "Global", "stage": "P3", "line_of_therapy": "2L"},
+        {"asset": "TAK-279", "indication": "Vitiligo", "region": null, "stage": "P2b"},
+        {"asset": "TAK-928", "indication": "Solid Tumors", "region": null, "stage": "P2"},
+        {"asset": "TAK-921", "indication": "Solid Tumors", "region": null, "stage": "P1"},
+        {"asset": "TAK-188", "indication": "Solid Tumors", "region": null, "stage": "P1"},
+        {"asset": "TAK-781", "indication": "Primary sclerosing cholangitis", "region": null, "stage": "P1"},
+        {"asset": "TAK-577", "indication": "von Willebrand disease", "region": "US", "stage": "approved"},
+        {"asset": "TAK-339", "indication": "Multiple Indications", "region": "JP", "stage": "approved"},
+        {"asset": "TAK-660", "indication": "Hemophilia A", "region": "CN", "stage": "filed"}
+      ],
+      "regulatory_events": [
+        {"asset": "TAK-121", "action": "filed", "indication": "Polycythemia vera", "region": "US", "agency": "FDA", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-861", "action": "filed", "indication": "Narcolepsy type 1", "region": "US", "agency": "FDA", "date": "Feb 2026", "from_progress_row": true},
+        {"asset": "TAK-853", "action": "filed", "indication": "Platinum-resistant ovarian cancer", "region": "JP", "agency": "PMDA", "date": "Jan 2026", "from_progress_row": true},
+        {"asset": "TAK-577", "action": "approval", "indication": "von Willebrand disease", "region": "EU", "agency": "EMA", "date": "Dec 2025", "from_progress_row": true},
+        {"asset": "TAK-861", "action": "filed", "indication": "Narcolepsy type 1", "region": "CN", "agency": "NMPA", "date": "Jan 2026", "from_progress_row": true},
+        {"asset": "TAK-961", "action": "filed", "indication": "Autoimmune Encephalitis", "region": "JP", "agency": "PMDA", "date": "Oct 2025", "from_progress_row": true},
+        {"asset": "TAK-339", "action": "filed", "indication": "Autoimmune Encephalitis", "region": "JP", "agency": "PMDA", "date": "Oct 2025", "from_progress_row": true},
+        {"asset": "TAK-577", "action": "approval", "indication": "von Willebrand disease", "region": "US", "agency": "FDA", "date": "Sept 2025", "from_progress_row": true},
+        {"asset": "TAK-339", "action": "approval", "indication": "Multiple Indications", "region": "JP", "agency": "MHLW", "date": "July 2025", "from_progress_row": true},
+        {"asset": "TAK-660", "action": "filed", "indication": "Hemophilia A", "region": "CN", "agency": "NMPA", "date": "July 2025", "from_progress_row": true}
+      ]
+    },
+    {
+      "chunk_index": 16,
+      "line_range": [807, 860],
+      "note": "Section II progress (Q1 FY2025 updates) — from_progress_row=true; carries plasma codes TAK-771/880 (the ch12 0/7 set). Mostly dedups with 8-12. NEW: TAK-577 vWD JP Filed (June 2025) [distinct action from the ch11 approval]; asset TAK-411. The TAK-755 AIS Ph2 trial footnote (line 853) is where the model cited that trial -> resolves the transient trial FN.",
+      "assets": [
+        {"identifiers": ["TAK-411"]}
+      ],
+      "programs": [
+        {"asset": "TAK-079", "indication": "Immunoglobulin A nephropathy", "region": "Global", "stage": "P3"},
+        {"asset": "TAK-771", "indication": "Chronic inflammatory demyelinating polyradiculoneuropathy and multifocal motor neuropathy", "region": "JP", "stage": "approved"},
+        {"asset": "TAK-880", "indication": "Primary Immunodeficiencies", "region": "US", "stage": "approved"},
+        {"asset": "SGN-35", "indication": "Front line Hodgkin's lymphoma", "region": "EU", "stage": "approved"},
+        {"asset": "TAK-880", "indication": "Primary Immunodeficiencies", "region": "EU", "stage": "approved"},
+        {"asset": "TAK-577", "indication": "von Willebrand disease", "region": "JP", "stage": "filed"},
+        {"asset": "TAK-226", "indication": "2L anemia-associated Myelodysplastic Syndrome", "region": "US", "stage": "P3", "line_of_therapy": "2L"},
+        {"asset": "TAK-226", "indication": "2L anemia-associated Myelodysplastic Syndrome", "region": "EU", "stage": "P3", "line_of_therapy": "2L"},
+        {"asset": "TAK-360", "indication": "Narcolepsy type 2", "region": null, "stage": "P2"},
+        {"asset": "TAK-411", "indication": "Chronic inflammatory demyelinating polyradiculoneuropathy", "region": null, "stage": "P2"},
+        {"asset": "TAK-168", "indication": "Solid Tumors", "region": null, "stage": "P1"}
+      ],
+      "trials": [
+        {"assets": ["TAK-755"], "indication": "Acute ischemic stroke", "phase": "2", "met_primary_endpoint": null}
+      ],
+      "regulatory_events": [
+        {"asset": "TAK-660", "action": "filed", "indication": "Hemophilia A", "region": "CN", "agency": "NMPA", "date": "July 2025", "from_progress_row": true},
+        {"asset": "TAK-771", "action": "approval", "indication": "Chronic inflammatory demyelinating polyradiculoneuropathy and multifocal motor neuropathy", "region": "JP", "agency": "MHLW", "date": "June 2025", "from_progress_row": true},
+        {"asset": "TAK-880", "action": "approval", "indication": "Primary Immunodeficiencies", "region": "US", "agency": "FDA", "date": "June 2025", "from_progress_row": true},
+        {"asset": "SGN-35", "action": "approval", "indication": "Front line Hodgkin's lymphoma", "region": "EU", "agency": "EMA", "date": "June 2025", "from_progress_row": true},
+        {"asset": "TAK-880", "action": "approval", "indication": "Primary Immunodeficiencies", "region": "EU", "agency": "EMA", "date": "May 2025", "from_progress_row": true},
+        {"asset": "TAK-577", "action": "filed", "indication": "von Willebrand disease", "region": "JP", "agency": "PMDA", "date": "June 2025", "from_progress_row": true}
+      ]
+    }
+  ]
+}

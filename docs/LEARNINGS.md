@@ -1,5 +1,261 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-10 — restatement FP subcategory: cross-chunk duplicates of captured facts
+
+The third "not-a-clean-FP" subcategory (after `key_incomplete` and `indication_verbose`) — the
+FP-decomposition discipline applied once more. Because the reg census labels restatement chunks
+(Takeda progress rows 14-16 restate the main table 8-12), the model's cross-chunk duplicate
+extractions with **inconsistent regions** (`tak-279 HS` = `Global` in one chunk, region-`-` in
+another) don't collapse, and the extras land as FP. `matching._duplicates_matched` reclassifies
+an FP that duplicates an already-MATCHED fact (same asset + collapsed-stage + compatible/contained
+indication; region differs) into a `restatement` subcategory: excluded from clean FP so
+**precision-on-distinct-facts** is reported cleanly (programs 0.78 raw → **0.88** distinct + 10
+restatement), but **NOT** merged away in collapse — merging would erase the real
+model-consistency finding. It is BOTH a genuine signal AND a census-composition artifact:
+decompose-and-report, never merge-away.
+
+## 2026-06-10 — indication_verbose: classify model over-specification, don't match it
+
+**What:** The model writes a program's indication as the disease PLUS population/setting
+("Pediatric on-demand and surgery treatment of von Willebrand disease"); golden (indication =
+disease only) is "von Willebrand disease". The fuzzy key doesn't bridge clean-vs-verbose.
+
+**Why NOT containment-match:** an asymmetric subset *match* would silently produce FALSE TPs —
+"von Willebrand disease" ⊆ "**acquired** von Willebrand disease" (congenital vs acquired = a
+different condition) would match and inflate recall invisibly. Same weak-alias-chaining failure
+as the IVIG over-merge and "Total".
+
+**Fix — classify, don't match.** A clean FP that agrees with a still-MISSED golden on every key
+field except indication, where the golden disease tokens (≥2 significant) ⊆ the predicted
+indication + extras, is reclassified to an `indication_verbose` FP subcategory (mirrors
+`key_incomplete`): the predicted leaves clean-FP (precision not charged a phantom), the golden
+**STAYS a miss** (recall never inflated — a narrowing case like "acquired X" is *visibly*
+bucketed for review, never a silent TP). Reported separately with both indication strings. The
+≥2-significant-token floor means single-token diseases ("Hemophilia A" → just "hemophilia")
+aren't auto-classified — conservative by design.
+
+**The real finding it surfaces (schema gap):** `Program` has `line_of_therapy`/`formulation`
+but **no population/setting field**, so the model has nowhere to put "pediatric / on-demand /
+surgery" except the indication string. That's a **schema-v2 / Phase-2-retrospective** lesson —
+NOT a mid-census change to the frozen schema. Named, not acted on.
+
+## 2026-06-10 — Two key-normalizations: sub-phase collapse + region-indeterminate
+
+Surfaced by the Takeda pipeline table (census batch 1). One reusable pattern names both:
+**collapse a sub-distinction the source makes but the key shouldn't gate on.**
+
+- **Sub-phase collapse (the stage analog of the agency PMDA==MHLW fold).** Source writes
+  `P-II (b)`; the model writes `P2`. `P2b` IS a Phase 2, so gating the key on the sub-letter
+  manufactures false misses. `matching.collapse_phase` strips the sub-phase letter
+  (P2a/P2b→P2, P3a/P3b→P3, 2a/2b→2; leaves P1/2, preclinical, filed, …) for the **key** in
+  both program and trial matching. Golden keeps the precise sub-phase; sub-phase is a scored
+  attribute. Generalized (not a P2a/P2b special-case) so a future `P3b` doesn't reopen this.
+- **Region-indeterminate (`region=null`).** A "-" in the region column = the source states
+  NO region. Verified there is **no legend** defining "-" (the glossary defines CN/EU/JP/U.S.
+  and spells out "Global" as a word). Labeling it `Global` would manufacture a key value from
+  absence — and would assert on the golden side exactly what grounding penalizes on the
+  predicted side (11% regions inferred-not-stated). So `GoldenProgram.region` is nullable;
+  null drops region from the key (`program_matches`: `g.region is None or p.region==g.region`)
+  and the program is still scored on asset+indication+stage. Same discipline as the chunk-29
+  region-inferred exclusions. Affected 10 programs in census chunks 8-9.
+
+**Labeling guard (bitten twice — IT-formulation, then "Pediatric" on MLN0002):** `indication`
+= DISEASE ONLY; population/formulation/dosing/line-of-therapy are separate fields, never folded
+into the indication string. Recorded in `src/evals/CLAUDE.md` policy (e).
+
+## 2026-06-10 — Grounding full-run findings + the chunk-granularity caveat
+
+Full grounding run over all **307 predicted facts** (`grounding.py`, commit `1849a1d`):
+
+- **Headline provenance (PRECISE, reportable):** the load-bearing tokens ground high and are NOT
+  affected by chunk granularity (they key on locally-unique, molecule-specific tokens): **asset
+  98%, action 100%, value 100%, indication 97%**. Predicted facts are genuinely cited to lines
+  that contain the molecule / regulatory verb / number / indication.
+- **CHUNK-GRANULARITY CAVEAT (stated property of the layer):** grounding checks token presence
+  *anywhere* in the cited `line_range`, so for dense chunks (Takeda L25-84 = 30 programs in one
+  range) region/stage both **over-credit** (a neighbor row's region rescues a wrong fact) and
+  **over-fail** (`Global` in a chunk that names specific regions). Therefore **region (62%) and
+  stage (53%) are DIRECTIONAL indicators of a real weakness, NOT precise rates** — this caveat
+  travels with those two numbers wherever reported. We are deliberately **not** building a
+  row-level fix: sub-splitting line_ranges fights the chunk-based provenance model, and the
+  finding holds whether it's 62% or 58%. Measure-and-caveat.
+- **Region inference = predicted-side mirror of golden policy 3 (finding, not a bug):** 11% of
+  region tokens are `Global` with NO region word in the source. The two harness halves agree
+  from opposite directions (golden excludes region-inferred facts; grounding flags them).
+- **Stage failure split:** 40 `map_gap` / 69 `real_failure` → ~37% of stage "failures" are
+  fixable token-map coverage (Novartis bare-number phase encoding), not extraction faults.
+- **Hard provenance error rate ~0.3%:** of 7 `asset` real_failures, **6 are market-metric
+  subjects** (value grounds; the subject word isn't on the cited line — the company
+  self-reference finding), and **1 is a genuine wrong-line citation** (177Lu-NeoB cited to a
+  Duchenne MD row). 1 confirmed wrong-line provenance error in 307 facts — logged, not chased.
+
+## 2026-06-10 — Grounding: region-inferred and map-gap are distinct from real failures
+
+`grounding.py` checks whether a predicted fact's cited `line_range` contains its salient tokens
+(closed enums via a reverse surface-form map: source "Approved"/"PhIII"/"Japan" ↔ enum
+`approval`/`3`/`JP`). A missing token has THREE distinct causes, reported as separate categories
+so a low grounding rate is not misread:
+
+- **real_failure** — genuinely absent (wrong line cited / fact not in the text): an
+  extraction-provenance fault.
+- **map_gap** — a recognizable surface IS present but the map doesn't bridge it (Novartis encodes
+  phase as a bare "3", which the map deliberately won't match — ambiguous with years): a fixable
+  token-map gap, NOT an extraction fault. So grounding pass-rate is **partly a map-coverage
+  measure**, not purely an extraction signal.
+- **inferred** (region only) — NO region word is in the cited text; the model asserted a region
+  the source never states. This is the **predicted-side mirror of golden policy 3** (we excluded
+  region-inferred programs from golden because the source didn't support the key). Grounding is
+  the layer that catches "the model asserts regions the text doesn't state" — so region grounding
+  is its own prominent number; a low rate is a FINDING.
+
+`line_range` is load-bearing; `snippet` is decorative and `snippet_fallback` (mashed-row chunk
+fallback) is EXPECTED, reported separately. **Also:** surface matching must be token-bounded —
+substring matching had the region surface `us` grounding inside "lupus"/"erythematosus"; fixed
+with `grounding._contains` (non-alphanumeric boundaries).
+
+## 2026-06-10 — therapeutic_area is reported descriptively, NOT scored for accuracy
+
+**What:** `metrics.py` first scored `therapeutic_area` as a matched-program attribute (5
+"errors" like von Willebrand disease `hematology` vs `rare_disease`).
+
+**Why that's wrong:** `therapeutic_area` is OPEN free-text **by locked design** — we deliberately
+did not enumerate it because there is no canonical TA taxonomy. Scoring it for accuracy against a
+golden label smuggles a taxonomy back in (the labeler's bucket becomes "correct"), contradicting
+the reason the field is open. `indication` is different — "IgA nephropathy" is a fact with real
+ground truth, so it stays a fuzzy **key**.
+
+**Fix:** `therapeutic_area` is EXCLUDED from scored attribute-accuracy and emitted as a
+descriptive `ta_disagreements` list (predicted bucket vs golden bucket + line_range), never an
+error count. Aggregate P/R/F1 is unaffected (TA was never in TP/FP/FN). The same taxonomy-free
+property applies to `modality` / `target` / `primary_endpoint` — also open, also not scored for
+accuracy. (Aside, from the same review: `metrics._locate` is display/provenance only and is not
+in the scoring path — the program TP 32→31 move was union cross-chunk dedup, not `_locate`.)
+
+## 2026-06-10 — Golden labeling policies: multi-region, under-specified, ambiguous-region
+
+All from one principle: golden encodes what the SOURCE supports at the SCHEMA's grain — never
+tuned to the model's output, never inventing a key value from labeler uncertainty.
+
+1. **Multi-region actions are SPLIT.** `region` is in the RegulatoryEvent key, so "US, EU, JP
+   & CN submissions" is FOUR `filed` events. The model emitting one is a real
+   under-decomposition miss, not a reason to collapse golden. `metrics.py` also reports a
+   region-collapsed recall cut so one 4-region sentence (4/13 of the standalone denominator)
+   can't dominate the headline.
+2. **Key-incomplete ≠ false positive.** A predicted fact whose open-text KEY field is a null
+   sentinel (a designation with `indication="not specified"`) is **under-specified**, not
+   hallucinated: keep the golden FN (no indication = no captured fact), but score the predicted
+   side as a distinct `key_incomplete` outcome (matching.is_key_incomplete /
+   normalize.is_null_sentinel), NOT a clean FP — precision must not eat a phantom FP. Do NOT
+   demote indication to an attribute to fix this; indication has real disambiguating power
+   (IgAN vs SLE), and demoting it would tune the key to the model. Finding: Flash-Lite extracts
+   regulatory designations but routinely drops the indication.
+3. **Ambiguous region: don't manufacture a key.** Real model errors stay errors (the source
+   shows Pluvicto's EU application was WITHDRAWN; a model "EU approved" is a genuine FP). But
+   where the source gives region only by mashed-column position (not prose), EXCLUDE the fact
+   rather than guess — `region="other"` is a substantive enum ("outside the named set"), NOT an
+   unknown-sentinel, so using it that way manufactures fake matches/penalties. Same discipline
+   as policy (c): no source support for a key field → don't invent one. (Applied: 3
+   region-inferred chunk-29 programs excluded; molecules kept as assets, prose-explicit
+   reg-events kept.)
+
+Effect on the 5-chunk batch: reg-event **precision 0.67→1.00** (3 designation FPs → KI),
+**recall 0.26** (standalone 0.23 / progress-row 0.30); programs R 0.65→0.70. Clean findings
+unchanged: Takeda chunk-12 reg-events **0/7** (table status cells extracted as program stages,
+not RegulatoryEvents) and the IVIG over-merge (3 distinct plasma molecules → 1 predicted
+cluster).
+
+## 2026-06-10 — Own-company metrics get a generic subject ("Company"), not the name
+
+**What:** On Novartis chunk 32 the net-sales `MarketMetric` matched on value/period/geography
+but FAILED on the `subject` key — predicted `subject="Company"`, golden `"Novartis"` — scoring
+0 TP / 1 FP / 1 FN despite identical numbers.
+
+**Why:** The consolidated income statement does not repeat the company name per line ("Net
+sales to third parties … 13 113"), so Flash-Lite labels the company's own consolidated figures
+with a generic subject ("Company"). This is the company-level analog of the period demotion: a
+discriminator stated once globally, not per row.
+
+**Fix:** `normalize.fold_self_reference(subject, source_company)` maps generic self-references
+(`Company` / `the Company` / `the Group` / `<company>` / `<company> group`) to the document's
+`source_company` by **exact canonical match**, applied to predicted AND golden subjects before
+collapse/match. After the fix chunk-32's metric flips to **1 TP / 0 FP / 0 FN**. Deliberately
+**excludes "Total"** — an aggregation marker that can denote a segment/summed subject, not the
+company; folding it would risk the weak-alias chaining seen in the asset over-merge. (Confirmed
+against the artifact: "Total" never appears as a subject; product groups like "Sandostatin
+Group" do and must NOT fold.) `metrics.py` must apply this fold — the matching predicate has no
+document context.
+
+**Also (corpus fact):** there are **zero NCT IDs** in either source document (0 predicted
+trials carry one) — trials are acronym-named. The trial-key `nct_id` tier is unexercised by
+real data (unit-tests only); matching falls through to `trial_name` then assets+indication+phase.
+
+## 2026-06-10 — Scope predictions to labeled chunks BEFORE collapsing (not after)
+
+**What:** First end-to-end scoring of one labeled chunk (Takeda chunk 14) produced **false
+FNs** — golden programs/reg-events that Flash-Lite *did* extract were scored as misses
+(TAK-961, TAK-861).
+
+**Why:** The harness collapsed predictions **document-wide first**, then scoped to the
+labeled chunk by the collapsed representative's `source_ref.line_range`. `collapse()` keeps
+the **first** emission's `source_ref`, so a fact extracted in several chunks is attributed
+to whichever chunk came first. TAK-861 (narcolepsy, filed) and TAK-961 appear in BOTH the
+chunk-9 regulatory table and the chunk-14 progress table; their representatives were stamped
+chunk 9, so scoping to chunk 14 dropped them. Confirmed: chunk 14's RAW extraction had all
+4 programs + 3 reg-events.
+
+**Fix / rule (for `metrics.py`):** Scope **raw** predictions to the **union of labeled chunk
+indices**, collapse **once within that union**, and match against the **union of golden
+labels**. Do **NOT** collapse-then-scope, and do **NOT** sum per-chunk scores — a fact in two
+labeled chunks (TAK-861 in 9 and 14) would be **double-counted**, measuring per-*mention*
+recall instead of per-*fact* recall. The document-wide `collapse()` stays (correct for the
+dedup-count report and the shared asset index, just not for chunk-scoped fact selection).
+Asset P/R is separately **document-level** (assets carry no `source_ref`, can't be
+chunk-scoped) and is gated on the document's full asset set being labeled.
+
+## 2026-06-10 — Asset clustering can transitively over-merge on shared weak identifiers
+
+**What:** The eval duplicate-collapse clusters assets by **shared-identifier union-find**
+(the same molecule appears as `ianalumab` and `VAY736`, etc.). On Takeda this chained
+**9 distinct IVIG programs into one cluster** (`10-ivig, deqsiga, gammagard-liquid,
+glovenin-i, tak-339, tak-880, tak-961, …`).
+
+**Why:** Extraction **over-applied non-unique identifiers across distinct dev codes** — it
+put brand `GAMMAGARD LIQUID` on *both* `TAK-880` and `TAK-339`, and alias `10% IVIG` on
+`TAK-339` / `TAK-880` / `TAK-961`. Union-find then transitively merges any assets sharing a
+slug, so these weak shared strings chain otherwise-distinct molecules into one mega-cluster.
+It is therefore *both* an extraction-quality issue (shared brand/alias reused) and an
+amplification by the merge-on-any-shared-identifier rule. The correct merges still work
+(`Adzynma ≡ ADAMTS13 ≡ TAK-755`, `Fabhalta ≡ iptacopan ≡ LNP023`, `Leqvio ≡ inclisiran`).
+
+**Fix / decision (v1):** **Keep the simple merge-on-any-shared-identifier rule** and let the
+golden set **quantify the impact before adding mitigation**. The over-merge is localized to
+Takeda's IVIG codes, and the considered mitigations carry their own under-merge risks:
+*Option B* (bridge only on strong ids — generic_name + dev codes) would under-merge
+brand-only references (a "Fabhalta"-only mention would not join the iptacopan cluster);
+*Option C* (refuse to merge two clusters that each already hold a distinct dev code) adds
+clustering logic. Both **deferred** pending golden-set evidence. Revisit if golden shows
+asset precision/recall is materially distorted by chained clusters.
+
+## 2026-06-09 — Extraction output must be persisted (the prior run was lost)
+
+**What:** The "34/34 Flash-Lite run completed" recorded in HANDOFF left **no artifact on
+disk** — a Phase-2 scan of the repo, `/tmp`, and `$HOME` turned up no pickle/JSON. The
+output had lived only in memory (any `/tmp` scratch was ephemeral / cleared), so it could
+not be scored without re-running and re-burning free-tier quota.
+
+**Why:** `extract_document` returned an in-memory `ExtractionResult`; nothing serialized
+it. `/tmp` is not durable, and the result was never written under the repo's gitignored
+`data/`.
+
+**Fix:** Added `src/extraction/persistence.py` (`save_extraction` / `load_extraction`: a
+versioned `schema_version` + `meta` + `counts` + `result` JSON that round-trips an
+`ExtractionResult` losslessly) and a CLI `python -m src.extraction.run --report <name>`
+that runs paced extraction and writes the artifact to `data/eval/extractions/` (gitignored
+via `data/`). That persisted artifact is the **fixed input** the eval harness scores
+against — produced once, never re-extracted just to iterate on scoring. **Rule:** any
+expensive LLM pass downstream work depends on must be persisted to `data/` at
+produce-time, not held in memory or `/tmp`.
+
 ## 2026-06-09 — Extraction model decision: Gemini 3.1 Flash-Lite + pacing
 
 **Model decision:** Gemini 3.1 Flash-Lite (`gemini-3.1-flash-lite-preview`) is the v1

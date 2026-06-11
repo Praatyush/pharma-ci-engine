@@ -1,0 +1,167 @@
+{
+  "golden_schema_version": "1",
+  "document_id": "q1-2026-interim-financial-report-en",
+  "source_company": "Novartis",
+  "artifact": "q1-2026-interim-financial-report-en.slice.extraction.json",
+  "reporting_period": "Q1 2026",
+  "as_of_date": "2026-03-31",
+  "labeled_chunks": [
+    {
+      "chunk_index": 32,
+      "line_range": [1065, 1127],
+      "note": "Innovation-Review pipeline rows (asset | indication | expected-filing-year | phase). Region not stated -> Global; the phase number is the Program stage. LoT (1L/2L) kept in the indication string so the two ITP programs stay distinct under the (asset,indication,region,stage) key. Named trials VAYHIA (PhIII, did NOT meet primary endpoint -> met=false) and INVEST-HD (PhIII, FPFV only -> no readout, met=null). YTB323 EMA PRIME is standalone prose (from_progress_row=false) -> the hard reg-event case. Net sales = company revenue metric; the Q1 2025 comparison figure is folded (period demoted). Income-statement line items (Other revenues, COGS, gross profit, SG&A) are NOT labeled — outside the MarketMetric enum.",
+      "assets": [
+        {"identifiers": ["ianalumab"]},
+        {"identifiers": ["VHB937"]},
+        {"identifiers": ["Vijoice"]},
+        {"identifiers": ["Votoplam"]},
+        {"identifiers": ["YTB323"]}
+      ],
+      "programs": [
+        {"asset": "ianalumab", "indication": "Systemic lupus erythematosus", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "ianalumab", "indication": "Systemic sclerosis", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"},
+        {"asset": "ianalumab", "indication": "1L immune thrombocytopenia", "region": "Global", "stage": "P3", "line_of_therapy": "1L", "therapeutic_area": "immunology"},
+        {"asset": "ianalumab", "indication": "2L immune thrombocytopenia", "region": "Global", "stage": "P3", "line_of_therapy": "2L", "therapeutic_area": "immunology"},
+        {"asset": "ianalumab", "indication": "Warm autoimmune hemolytic anemia", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "VHB937", "indication": "Alzheimer's disease", "region": "Global", "stage": "P2", "therapeutic_area": "neuroscience"},
+        {"asset": "VHB937", "indication": "Amyotrophic lateral sclerosis", "region": "Global", "stage": "P2", "therapeutic_area": "neuroscience"},
+        {"asset": "Vijoice", "indication": "Lymphatic malformations", "region": "Global", "stage": "P3", "therapeutic_area": "rare_disease"},
+        {"asset": "Votoplam", "indication": "Huntington's disease", "region": "Global", "stage": "P3", "therapeutic_area": "neuroscience"},
+        {"asset": "YTB323", "indication": "Active refractory lupus nephritis", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"},
+        {"asset": "YTB323", "indication": "Active refractory systemic lupus erythematosus", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"},
+        {"asset": "YTB323", "indication": "1L high-risk large B-cell lymphoma", "region": "Global", "stage": "P2", "line_of_therapy": "1L", "therapeutic_area": "oncology"},
+        {"asset": "YTB323", "indication": "Systemic sclerosis", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"},
+        {"asset": "YTB323", "indication": "Myositis", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"},
+        {"asset": "YTB323", "indication": "ANCA associated vasculitis", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"}
+      ],
+      "trials": [
+        {"trial_name": "VAYHIA", "assets": ["ianalumab"], "indication": "Warm autoimmune hemolytic anemia", "phase": "3", "met_primary_endpoint": false, "primary_endpoint": null},
+        {"trial_name": "INVEST-HD", "assets": ["Votoplam"], "indication": "Huntington's disease", "phase": "3", "met_primary_endpoint": null}
+      ],
+      "regulatory_events": [
+        {"asset": "YTB323", "action": "PRIME", "indication": "Myositis", "region": "EU", "agency": "EMA", "date": "April 2026", "from_progress_row": false}
+      ],
+      "market_metrics": [
+        {"subject": "Novartis", "metric": "revenue", "geography": "Global", "value": 13113, "unit": "USD millions", "currency": "USD", "period": "Q1 2026"}
+      ]
+    },
+    {
+      "chunk_index": 29,
+      "line_range": [979, 992],
+      "note": "Standalone-prose regulatory actions (from_progress_row=false) — the headline hard case. Policy 1 (split): ianalumab/VAY736 Sjogren's 'US, EU, JP & CN submissions' = FOUR regional filed events (agency by region) + FDA Breakthrough + FDA Priority Review + Japan Orphan designations. Reg-events are labeled only where the PROSE makes the region explicit (Leqvio '– US approval', OAV101 '– JP approval', Pluvicto 'Withdrew EU…', Rhapsido 'EMA CHMP'). Policy 3 (no manufactured key): the Pluvicto/Rhapsido 'Approved' columns give region only by column-position inference, so their PROGRAMS are excluded (molecules kept as assets; their prose-explicit reg-events kept). NB the source shows Pluvicto EU was WITHDRAWN, not approved — a model 'EU approved' is a real error.",
+      "assets": [
+        {"identifiers": ["VAY736", "ianalumab"]},
+        {"identifiers": ["Leqvio"]},
+        {"identifiers": ["OAV101"]},
+        {"identifiers": ["Pluvicto"]},
+        {"identifiers": ["Rhapsido"]}
+      ],
+      "programs": [
+        {"asset": "ianalumab", "indication": "Sjogren's disease", "region": "Global", "stage": "filed", "therapeutic_area": "immunology"},
+        {"asset": "Leqvio", "indication": "Hypercholesterolaemia, pediatrics", "region": "US", "stage": "approved", "therapeutic_area": "cardiometabolic"},
+        {"asset": "OAV101", "indication": "Spinal muscular atrophy", "region": "JP", "stage": "approved", "therapeutic_area": "neuroscience"}
+      ],
+      "regulatory_events": [
+        {"asset": "ianalumab", "action": "filed", "indication": "Sjogren's disease", "region": "US", "agency": "FDA", "from_progress_row": false},
+        {"asset": "ianalumab", "action": "filed", "indication": "Sjogren's disease", "region": "EU", "agency": "EMA", "from_progress_row": false},
+        {"asset": "ianalumab", "action": "filed", "indication": "Sjogren's disease", "region": "JP", "agency": "PMDA", "from_progress_row": false},
+        {"asset": "ianalumab", "action": "filed", "indication": "Sjogren's disease", "region": "CN", "agency": "NMPA", "from_progress_row": false},
+        {"asset": "ianalumab", "action": "breakthrough", "indication": "Sjogren's disease", "region": "US", "agency": "FDA", "from_progress_row": false},
+        {"asset": "ianalumab", "action": "priority_review", "indication": "Sjogren's disease", "region": "US", "agency": "FDA", "from_progress_row": false},
+        {"asset": "ianalumab", "action": "orphan", "indication": "Sjogren's disease", "region": "JP", "agency": "PMDA", "from_progress_row": false},
+        {"asset": "Leqvio", "action": "approval", "indication": "Hypercholesterolaemia, pediatrics", "region": "US", "agency": "FDA", "date": "Q3 2025", "from_progress_row": false},
+        {"asset": "OAV101", "action": "approval", "indication": "Spinal muscular atrophy", "region": "JP", "agency": "MHLW", "date": "Q2 2025", "from_progress_row": false},
+        {"asset": "Pluvicto", "action": "application_withdrawal", "indication": "Metastatic castration-resistant prostate cancer pre-taxane", "region": "EU", "agency": "EMA", "from_progress_row": false},
+        {"asset": "Rhapsido", "action": "CHMP_opinion", "indication": "Chronic spontaneous urticaria", "region": "EU", "agency": "EMA", "from_progress_row": false}
+      ]
+    },
+    {
+      "chunk_index": 30,
+      "line_range": [993, 1031],
+      "note": "remibrutinib (US submission CIndU = standalone reg-event; RemIND Primary endpoint MET for cold and cholinergic urticaria) + the 'Selected innovative medicines pipeline projects' list (asset | indication | first-planned-submission year | phase). Region not stated -> Global; phase number -> Program stage. Trials: RemIND (met=true; phase not stated in-chunk, set 3 as registrational — name-tier match doesn't depend on phase) and MARINA (EWF980/del-desiran, PhI/II, results published, met not stated -> null). 'Avidity acquisition completed' is M&A (deferred, not labeled).",
+      "assets": [
+        {"identifiers": ["remibrutinib"]},
+        {"identifiers": ["Ac-PSMA-617"]},
+        {"identifiers": ["Aimovig"]},
+        {"identifiers": ["DAK539", "pelabresib"]},
+        {"identifiers": ["DII235"]},
+        {"identifiers": ["DWH213", "del-brax"]},
+        {"identifiers": ["EWF980", "del-desiran"]},
+        {"identifiers": ["FUB523", "zigakibart"]},
+        {"identifiers": ["GHZ339"]},
+        {"identifiers": ["GIA632"]},
+        {"identifiers": ["JSB462"]},
+        {"identifiers": ["KAE609", "cipargamin"]},
+        {"identifiers": ["Kesimpta"]},
+        {"identifiers": ["KLU156"]}
+      ],
+      "programs": [
+        {"asset": "remibrutinib", "indication": "Chronic inducible urticaria", "region": "US", "stage": "filed", "therapeutic_area": "immunology"},
+        {"asset": "Ac-PSMA-617", "indication": "post Lu metastatic castration-resistant prostate cancer", "region": "Global", "stage": "P3", "therapeutic_area": "oncology"},
+        {"asset": "Ac-PSMA-617", "indication": "Metastatic castration-resistant prostate cancer 1L", "region": "Global", "stage": "P3", "line_of_therapy": "1L", "therapeutic_area": "oncology"},
+        {"asset": "Aimovig", "indication": "Migraine, pediatrics", "region": "Global", "stage": "P3", "therapeutic_area": "neuroscience"},
+        {"asset": "DAK539", "indication": "Myelofibrosis", "region": "Global", "stage": "P3", "therapeutic_area": "oncology"},
+        {"asset": "DII235", "indication": "CVRR-Lp(a)", "region": "Global", "stage": "P2", "therapeutic_area": "cardiometabolic"},
+        {"asset": "DWH213", "indication": "Facioscapulohumeral muscular dystrophy", "region": "Global", "stage": "P3", "therapeutic_area": "rare_disease"},
+        {"asset": "EWF980", "indication": "Myotonic dystrophy type 1", "region": "Global", "stage": "P3", "therapeutic_area": "rare_disease"},
+        {"asset": "FUB523", "indication": "IgA nephropathy", "region": "Global", "stage": "P3", "therapeutic_area": "immunology"},
+        {"asset": "GHZ339", "indication": "Atopic dermatitis", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"},
+        {"asset": "GIA632", "indication": "Atopic dermatitis", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"},
+        {"asset": "GIA632", "indication": "Vitiligo", "region": "Global", "stage": "P2", "therapeutic_area": "immunology"},
+        {"asset": "JSB462", "indication": "Prostate cancer", "region": "Global", "stage": "P2", "therapeutic_area": "oncology"},
+        {"asset": "KAE609", "indication": "Malaria, uncomplicated", "region": "Global", "stage": "P2", "therapeutic_area": "infectious_disease"},
+        {"asset": "KAE609", "indication": "Malaria, severe", "region": "Global", "stage": "P2", "therapeutic_area": "infectious_disease"},
+        {"asset": "Kesimpta", "indication": "Multiple sclerosis", "region": "Global", "stage": "P3", "therapeutic_area": "neuroscience"},
+        {"asset": "KLU156", "indication": "Malaria, uncomplicated", "region": "Global", "stage": "P3", "therapeutic_area": "infectious_disease"}
+      ],
+      "trials": [
+        {"trial_name": "RemIND", "assets": ["remibrutinib"], "indication": "cold and cholinergic urticaria", "phase": "3", "met_primary_endpoint": true},
+        {"trial_name": "MARINA", "assets": ["EWF980"], "indication": "Myotonic dystrophy type 1", "phase": "1/2", "met_primary_endpoint": null}
+      ],
+      "regulatory_events": [
+        {"asset": "remibrutinib", "action": "filed", "indication": "Chronic inducible urticaria", "region": "US", "agency": "FDA", "date": "Q4 2025", "from_progress_row": false}
+      ]
+    },
+    {
+      "chunk_index": 28,
+      "line_range": [956, 983],
+      "note": "Innovation Review: Q1 approvals + completed submissions / awaiting decisions (standalone prose, from_progress_row=false). Overlaps ch29 at 979-983 (VAY736, Leqvio) -> dedups in the union. NEW vs ch29: Cosentyx (HS approval + Polymyalgia rheumatica US/EU/JP submissions + HS EU submission), Fabhalta (JP submission + FDA priority review + APPLAUSE-IgAN PhIII trial). indication = disease only.",
+      "assets": [
+        {"identifiers": ["Cosentyx", "secukinumab"]},
+        {"identifiers": ["Leqvio", "inclisiran"]},
+        {"identifiers": ["Zolgensma", "OAV101"]},
+        {"identifiers": ["Fabhalta"]},
+        {"identifiers": ["VAY736", "ianalumab"]}
+      ],
+      "programs": [
+        {"asset": "Cosentyx", "indication": "Hidradenitis suppurativa", "region": "US", "stage": "approved", "therapeutic_area": "immunology"},
+        {"asset": "Cosentyx", "indication": "Polymyalgia rheumatica", "region": "Global", "stage": "filed", "therapeutic_area": "immunology"},
+        {"asset": "Leqvio", "indication": "Hypercholesterolaemia, pediatrics", "region": "US", "stage": "approved", "therapeutic_area": "cardiometabolic"},
+        {"asset": "Zolgensma", "indication": "Spinal muscular atrophy", "region": "JP", "stage": "approved", "therapeutic_area": "neuroscience"},
+        {"asset": "Fabhalta", "indication": "IgA nephropathy", "region": "Global", "stage": "filed", "therapeutic_area": "immunology"},
+        {"asset": "VAY736", "indication": "Sjogren's disease", "region": "Global", "stage": "filed", "therapeutic_area": "immunology"}
+      ],
+      "trials": [
+        {"trial_name": "APPLAUSE-IgAN", "assets": ["Fabhalta"], "indication": "IgA nephropathy", "phase": "3", "met_primary_endpoint": null}
+      ],
+      "regulatory_events": [
+        {"asset": "Cosentyx", "action": "approval", "indication": "Hidradenitis suppurativa", "region": "US", "agency": "FDA", "date": "Q1 2026", "from_progress_row": false},
+        {"asset": "Cosentyx", "action": "filed", "indication": "Polymyalgia rheumatica", "region": "US", "agency": "FDA", "from_progress_row": false},
+        {"asset": "Cosentyx", "action": "filed", "indication": "Polymyalgia rheumatica", "region": "EU", "agency": "EMA", "from_progress_row": false},
+        {"asset": "Cosentyx", "action": "filed", "indication": "Polymyalgia rheumatica", "region": "JP", "agency": "PMDA", "from_progress_row": false},
+        {"asset": "Cosentyx", "action": "filed", "indication": "Hidradenitis suppurativa", "region": "EU", "agency": "EMA", "from_progress_row": false},
+        {"asset": "Leqvio", "action": "approval", "indication": "Hypercholesterolaemia, pediatrics", "region": "US", "agency": "FDA", "date": "Q3 2025", "from_progress_row": false},
+        {"asset": "Zolgensma", "action": "approval", "indication": "Spinal muscular atrophy", "region": "JP", "agency": "MHLW", "from_progress_row": false},
+        {"asset": "Fabhalta", "action": "filed", "indication": "IgA nephropathy", "region": "JP", "agency": "PMDA", "from_progress_row": false},
+        {"asset": "Fabhalta", "action": "priority_review", "indication": "IgA nephropathy", "region": "US", "agency": "FDA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "filed", "indication": "Sjogren's disease", "region": "US", "agency": "FDA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "filed", "indication": "Sjogren's disease", "region": "EU", "agency": "EMA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "filed", "indication": "Sjogren's disease", "region": "JP", "agency": "PMDA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "filed", "indication": "Sjogren's disease", "region": "CN", "agency": "NMPA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "breakthrough", "indication": "Sjogren's disease", "region": "US", "agency": "FDA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "priority_review", "indication": "Sjogren's disease", "region": "US", "agency": "FDA", "from_progress_row": false},
+        {"asset": "VAY736", "action": "orphan", "indication": "Sjogren's disease", "region": "JP", "agency": "PMDA", "from_progress_row": false}
+      ]
+    }
+  ]
+}
