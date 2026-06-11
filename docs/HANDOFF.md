@@ -5,6 +5,50 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 3 Stage A — A1 shared scorer BUILT + VERIFIED (2026-06-11)
+
+**AUTHORITATIVE STATUS:** **Stage A sub-step A1 (the shared retrieval scorer) is built and verified;
+A2 (the chunk-leg retriever) is next.** No retriever, embeddings, FAISS, BM25, RRF, or index exist
+yet. Supersedes the design-locked entry below as current state.
+
+### Built
+- **`src/evals/retrieval_scorer.py`** — the **leg-agnostic** shared scorer (the component both Stage A
+  and Stage B plug into, so A-vs-B stays apples-to-apples). §2 containment (`line_containment`, the
+  single line-interval overlap; **T a sweepable parameter**, never baked in), §5 clean-vs-
+  `resolution_limited` split, §3 construct handlers (single / set-of-singles / comparison two-score /
+  aggregate recall-fraction), §6 slicing, §7 exclusion. **Stdlib only — no new deps.** (Note:
+  `grounding.py` had no line-*interval* overlap to reuse — `_cited_text` is token-presence; the
+  interval overlap is defined once here.)
+- **`tests/evals/test_retrieval_scorer.py`** — containment arithmetic, T-sweepability, clean/RL split,
+  and the A1 gate (golden reproduction). Full suite **102 passing**.
+
+### Verified (the A1 gate)
+- The scorer reproduces the labeling-pass numbers **10/10** from the golden's own stand-in units:
+  Q1 4/4, Q3 clean 3/3 + RL-slice 3, Q4 recall@1 0.875 / @2 1.00, Q5 presence 2/2 + attribute 3/4,
+  Q6–Q10 1/1, Q2 excluded (§7). **T-invariant across T ∈ {0.01, 0.5, 0.99}** — containment is
+  **bimodal (1.0/0.0)** over stand-in units, confirming the locked T-deferral finding (T cannot be
+  calibrated until A2 produces real retrieved units; see LEARNINGS 2026-06-11 + `RETRIEVAL_PLAN.md`
+  §A.6).
+
+### Golden reconciliation (one logical fix, same commit)
+- **Q5 slice convention reconciled to §6.** The golden's Q5 `sliced` prose was Novartis-scoped
+  (`novartis_extracted 2/3`, `novartis_un_extracted 1/3`); reconciled to the **§6 corpus-wide
+  partition** the scorer emits (`extracted 3/3`, `un_extracted 0/1`), with Vanrafia preserved as a
+  descriptive note (Novartis's approved IgAN asset = the backbone signal). **Q5 scores untouched**
+  (presence 2/2, attribute 3/4). **No schema-version bump:** the `sliced` field is descriptive/
+  human-facing, the scorer derives its slice from member `slice` tags (not this field), and no loader
+  validates the retrieval golden's structure. A scan confirmed Q5 was the **only** query with a
+  scoped-denominator slice (the `rollup.by_slice` tally counts queries by slice tag, a different,
+  consistent thing).
+
+### Next — A2 (chunk-leg retriever)
+- Build per `RETRIEVAL_PLAN.md` Stage A: `src/rag/{units,embeddings,dense,sparse,fusion,chunk_leg}.py`
+  + `src/evals/retrieval_run.py`. Deps `faiss-cpu` / `rank-bm25` / `fastembed` added **then, with
+  approval**; index to gitignored `data/rag/`. The scorer is ready to receive real ranked units; the
+  T decision comes due at Gate A.
+
+---
+
 ## Phase 3 — Retrieval DESIGN locked (Block 2 + Stage-A calls) (2026-06-11)
 
 **AUTHORITATIVE STATUS:** **retrieval design locked; Stage A (chunk-leg) implementation NOT yet

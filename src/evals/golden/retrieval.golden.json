@@ -167,7 +167,7 @@
       "comparison": {
         "entities": ["Takeda", "Novartis"],
         "presence_coverage": {"formula": "AND(entities) o OR(entity's qualifying assets) o OR(locations)", "score": "2/2", "detail": "Takeda satisfied via mezagitamab; Novartis satisfied via any one of {Vanrafia, Fabhalta, zigakibart}"},
-        "attribute_coverage": {"attribute": "stage", "formula": "AND(qualifying assets) o OR(locations)", "score": "3/4", "stand_in_units": [[202, 301], [956, 983], [993, 1031]], "detail": "mezagitamab/Fabhalta/zigakibart HIT; Vanrafia MISS (un-extracted)", "sliced": {"overall": "3/4", "novartis_extracted": "2/3 (Fabhalta filed, zigakibart Phase 3)", "novartis_un_extracted": "1/3 (Vanrafia approved — reachable ONLY by chunk leg)"}}
+        "attribute_coverage": {"attribute": "stage", "formula": "AND(qualifying assets) o OR(locations)", "score": "3/4", "stand_in_units": [[202, 301], [956, 983], [993, 1031]], "detail": "mezagitamab/Fabhalta/zigakibart HIT; Vanrafia MISS (un-extracted)", "sliced": {"extracted": "3/3", "un_extracted": "0/1", "note": "§6 corpus-wide extracted/un-extracted partition over the 4 member assets (matches the A1 scorer). Extracted 3/3 = mezagitamab (Takeda) + Fabhalta + zigakibart, all hit; sole un-extracted miss = Vanrafia (atrasentan), Novartis's APPROVED IgAN asset, reachable only by the chunk leg (the backbone-argument signal)."}}
       },
       "member_facts": [
         {
