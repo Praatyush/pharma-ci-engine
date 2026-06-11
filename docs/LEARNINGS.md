@@ -1,5 +1,33 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-11 — T (containment threshold), third appearance: coarse units reproduce bimodality
+
+**What:** The containment threshold **T** has now resisted calibration **three** times, and the
+retrieval-plan design (`docs/RETRIEVAL_PLAN.md` §A.6) finally names the mechanism. (1) Golden lock:
+extraction-provenance `line_range`s bias containment to ≈1.0. (2) Labeling pass: containment was
+bimodal (1.0/0.0) because the stand-in unit was *the chunk containing the span*. (3) Retrieval
+design: **even with REAL ranked retrieval, the locked 1500/200 chunk units keep containment
+bimodal** — so T still cannot be richly calibrated at chunk grain.
+
+**Why (the non-obvious part):** the earlier framing blamed the ≈1.0 bias on the *labeler* choosing
+the containing chunk as the stand-in. That is only half the story. The deeper cause is a
+**granularity mismatch**: golden spans are short and semantic (1–14 lines), retrieval chunks are
+coarse (~80 lines), and the chunks are non-overlapping outside a 200-char seam. So a short span
+sits **entirely inside one chunk** (containment 1.0 if that chunk is retrieved) and overlaps a
+**neighbor by 0 lines** (containment 0.0) — there is no fractional middle for T to threshold.
+**Swapping the labeler's stand-in for a real retriever does NOT, by itself, produce sub-1.0
+containment.** Fractional containment requires retrieval units **comparable to or finer than the
+spans**, which coarse chunks are not.
+
+**Fix / rule:** do **not** pre-emptively re-chunk to "fix" T. Reuse 1500/200 for Stage A (locked),
+make T-calibration an explicit Stage-A sub-task that emits the **distribution** of max-containment
+over retrieved top-k, and **decide at Gate A with data**: pin T if a usable fractional distribution
+exists; else either adopt a finer retrieval `ChunkConfig` (a Gate-A lever, not a now-change) **or
+report that T is structurally inert at chunk grain** and pin it only via the long-span / aggregate /
+comparison cases. Same reasoned-deferral discipline as the original T deferral and the RRF
+α-avoidance — a rank-/threshold-free design wherever the golden can't calibrate the knob. T is now
+**deferred-with-a-understood-mechanism**, not deferred-by-ignorance.
+
 ## 2026-06-11 — Retrieval relevance policy: gate-then-pass, and the tripwire stayed dry
 
 **What:** The Phase-3 retrieval golden was built by **discovering the policy's holes before

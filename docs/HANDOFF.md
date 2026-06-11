@@ -5,6 +5,49 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 3 — Retrieval DESIGN locked (Block 2 + Stage-A calls) (2026-06-11)
+
+**AUTHORITATIVE STATUS:** **retrieval design locked; Stage A (chunk-leg) implementation NOT yet
+started.** The staged implementation plan is approved and persisted as **`docs/RETRIEVAL_PLAN.md`**
+(the design-locked reference Stage A builds against). No retrieval code, deps, or index exist — those
+are built per stage, gated. Supersedes the golden-locked entry below as current state.
+
+### Block 2 design locked
+- **Retrieval unit:** chunk leg REQUIRED (baseline + reachability backbone, independently shippable);
+  entity leg LEAN + layered, measured by per-leg span-decomposition in the extracted slice; **null
+  entity contribution is acceptable**. Entity-only disqualified as primary (Vanrafia un-extraction +
+  Q1 misclassification).
+- **Embedding library: `fastembed`** (local, reproducible, quota-free, lightweight) — config-isolated
+  (`gemini_client.py`/`_require_env` pattern), `EMBED_MODEL` configurable; index records model+version.
+- **Score combination: RRF, `k_rrf=60`, no normalization, no tunable weight** (α uncalibrable here,
+  same reason as T).
+- **Target-k:** recall@k over k ∈ {1,3,5,10}, sliced by query type; operating-k deferred to Phase 4.
+- **Module split:** retriever in `src/rag/`; **shared scorer in `src/evals/`** (reuses `normalize` +
+  `grounding` overlap helpers) — built once, reused by both stages so A-vs-B is apples-to-apples.
+
+### The two Stage-A calls
+- **Reuse the existing 1500/200 ingestion chunk config** for Stage-A retrieval units (reuse
+  `chunk_document`; don't write a second chunker). Retrieval chunking is an independent parameter but
+  is **NOT changed now** — whether finer units are justified is a **Gate-A decision** on the
+  containment + recall@k data.
+- **T-calibration is the T-problem's third appearance** (`RETRIEVAL_PLAN.md` §A.6): coarse chunks keep
+  containment **bimodal (1.0/0.0)** even with real retrieval, so T may prove **structurally inert at
+  chunk grain** — if so, that is **reported as a finding**, not solved speculatively. Decided at
+  Gate A. See LEARNINGS 2026-06-11.
+
+### Staged structure (gated)
+Stage A (chunk dense+BM25+RRF, scored vs golden, **T decided here**) → **Gate A** (sliced chunk-leg
+recall@k + the T decision; reviewed before any entity work) → Stage B (entity index, per-leg
+decomposition, **entity Δrecall incl. acceptable ≈0**) → **Gate B**. Each gate produces one
+reviewable artifact (`RETRIEVAL_PLAN.md` has the full spec).
+
+### Next — Stage A (chunk-leg) implementation (NOT started; needs its own kickoff)
+- Build per `RETRIEVAL_PLAN.md`: `src/rag/{units,embeddings,dense,sparse,fusion,chunk_leg}.py` +
+  `src/evals/{retrieval_scorer,retrieval_run}.py`. Deps to add **then, with approval**: `faiss-cpu`,
+  `rank-bm25`, `fastembed`. Index persists to gitignored `data/rag/`.
+
+---
+
 ## Phase 3 — Retrieval golden LOCKED + persisted (policy v2) (2026-06-11)
 
 **AUTHORITATIVE STATUS:** Phase 3 is at **"retrieval golden locked + persisted; retrieval
