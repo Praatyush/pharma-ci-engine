@@ -1,5 +1,92 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-11 — Retrieval relevance policy: gate-then-pass, and the tripwire stayed dry
+
+**What:** The Phase-3 retrieval golden was built by **discovering the policy's holes before
+trusting it**, not by labeling straight through. Two **gates** labeled one query each
+end-to-end to break the policy on purpose: **Q3** (mashed oveporexton row) broke v0 §5 — it
+keyed resolution_limited on *surface-token* line-uniqueness, which the positional region↔date
+binding defeated → rewrote §5 to key on **answer-bearing-span isolation**, with a *sibling* =
+"a competing answer to the **same query slot**" (a different-indication co-located fact is NOT
+a sibling), span-level. **Q5** (IgAN cross-doc) broke v1 §3 — one-fact-one-span couldn't
+represent a company with **multiple assets at different stages** → rewrote §3 comparison to
+**two coverage scores** (presence AND∘OR∘OR + attribute AND∘OR). Then a full **labeling pass**
+with a **tripwire**: on the first *new* relational query of each shape, stop and ask "did §3 v2
+hold?"
+
+**Why it matters:** a break at the tripwire is a *success of the gating process*, surfaced
+loudly, not patched silently. The **aggregate** construct (recall-over-row-set) was validated
+on **Q4** (CV pipeline) and **HELD** — the tripwire **stayed dry**, so the pass completed.
+
+**Fix / rule:** policy v2 is **locked** and embedded in `src/evals/golden/retrieval.golden.json`
+(`policy_v2` + `validation_history`). Construct selection is **closed-and-query-defined
+(set-of-singles) vs open-and-corpus-defined (aggregate)** — a literal source value that *sounds*
+categorical (Q1 "Multiple Indications") does NOT make a query an aggregate. Authorship rule:
+golden spans come from **reading source**, never extraction output.
+
+## 2026-06-11 — Comparison construct is validated-on-motivating-case-only (zero-asset untested)
+
+**What:** The §3 v2 **comparison** construct (presence-coverage + attribute-coverage, two scores
+never collapsed) has been exercised on **exactly one** query — its motivating case **Q5** (IgAN).
+There is **no second, fresh comparison** in the seed set, so it is **NOT independently
+validated**.
+
+**Why:** In particular the **zero-qualifying-asset case is untested** — a comparison where one
+compared entity has *no* qualifying asset, so presence-coverage must score that side **0** (e.g.
+"which of A and B have a CAR-T for lupus" when only one does). Q5 had both sides present
+(Takeda 1 asset, Novartis 3), so the 0-branch of `AND(entities)` never executed.
+
+**Fix / rule:** treat this as a **known limitation, not settled validation** (recorded in the
+golden's `3_construct_comparison_STATUS`). Re-evaluate — and revise the construct if needed — on
+the **first future comparison query that exposes a deficiency**. Do not assume the two-score
+construct generalizes until a zero-asset (and a second multi-asset) instance has run.
+
+## 2026-06-11 — Two distinct entity-leg blindnesses; the chunk leg is the only backbone
+
+**What:** The retrieval golden surfaced **two different reasons** the entity (extracted-fact)
+retrieval leg cannot answer a real CI query — both rescued **only** by the chunk (text)
+retrieval leg:
+
+- **Blindness by UN-EXTRACTION.** Novartis's only *approved, marketed* IgAN asset
+  **Vanrafia (atrasentan)** lives at `q1-2026-interim-financial-report-en` **L443–445**, an
+  **un-extracted** chunk (it's filed under the CVRM franchise; Novartis extracts only 12 of 100
+  chunks). The entity leg has nothing indexed there. (Q5; the asset the seed sketch itself
+  missed.)
+- **Blindness by MISCLASSIFICATION.** The Takeda plasma reg-events (`qr2025_q4_Pipeline_table_en`
+  **L555–581** + progress rows) are in **extracted** chunks, but Flash-Lite emits the
+  "Approved/Filed (date)" cells as a Program **`stage`**, not a `RegulatoryEvent` — so the entity
+  leg returns the **wrong entity type** even though the text is indexed. (Q1; the plasma-recall
+  finding from Phase 2, now reframed for retrieval.)
+
+**Why it matters:** these are the concrete, portfolio-valuable justifications for the locked
+Phase-3 design (chunk retrieval = baseline + reachability backbone; entity retrieval = a measured
+layer on top). Un-extraction and misclassification are **different** failure modes and must be
+reported as **different** slices — un-extracted spans are tagged `un-extracted` (§6); misclassified
+ones are `extracted` but flagged in the query note.
+
+**Fix / rule:** the retrieval golden keys every span `(doc_id, line_range)` and tags each
+`extracted | un-extracted | mixed`; reporting is **always sliced** — never merge a coverage number
+across the two (a merged "Novartis 2/3" would hide that the headline answer is entity-leg-unreachable).
+
+## 2026-06-11 — Retrieval containment threshold T is DEFERRED (reasoned), not chosen
+
+**What:** The containment threshold **T = 0.5** (§2: a unit HITS a golden span when ≥ T of the
+span's lines fall inside it) is **provisional and explicitly un-calibrated**. Neither the two
+gates nor the labeling pass produced **any** evidence to tune it.
+
+**Why (this is the subtle part, not an oversight):** the labeling used **extraction-provenance
+`line_range`s as stand-in retrieved units**, and a fact's authored golden span sits **inside the
+very chunk that extracted it** — so containment comes out **≈1.0 by construction**. Across all 9
+scored queries containment was **bimodal (1.0 / 0.0)** and **no span straddled a unit boundary**,
+so T could be anything in (0,1] and every verdict is identical. The stand-in method **cannot
+falsify T**.
+
+**Fix / rule — deferred decision with a stated trigger:** do **NOT** tune T from labeling.
+**Calibrate T against the first real retrieval index**, where a retriever returns units with
+*independent* boundaries and **sub-T containment can actually occur** (long answer spans, spans
+straddling chunk edges). Until then T=0.5 stands as a placeholder, and §4 `borderline_containment`
+is expected to stay inert (it did this pass). Recorded in the golden's `t_calibration`.
+
 ## 2026-06-10 — restatement FP subcategory: cross-chunk duplicates of captured facts
 
 The third "not-a-clean-FP" subcategory (after `key_incomplete` and `indication_verbose`) — the

@@ -82,7 +82,10 @@ worked example (notably its rich endpoint vocabulary) — now one area among man
   closed-enum and ID fields by **exact match** and the open free-text fields
   (`therapeutic_area`, `indication`, `target`, `modality`, endpoint) by
   **normalized/fuzzy match**. A regression runner scores every prompt/model
-  change.
+  change. The **retrieval-quality** layer's golden is locked + persisted at
+  `evals/golden/retrieval.golden.json` (query-based, cross-document), governed by
+  the locked relevance **policy v2** embedded in that file — see `docs/HANDOFF.md`
+  (Phase 3) and `src/rag/CLAUDE.md`. (Retrieval *design* is a later conversation.)
 - **`agent/`** — single research agent: a planning loop, tool definitions, and
   synthesis that **cites sources**. Tools: `corpus_retrieve` (rag),
   `clinicaltrials_lookup`, `fda_lookup`.

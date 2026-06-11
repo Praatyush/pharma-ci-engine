@@ -9,6 +9,22 @@ mapping (FAISS stores vectors only, so this mapping is our responsibility), and
 Hybrid is essential here: drug names, NCT IDs, and endpoint acronyms (PFS, OS,
 ORR) are exact tokens that pure vector search misses.
 
+## Retrieval golden + relevance policy (Phase 3 — LOCKED; eval contract, not a build)
+
+- The retrieval eval scores against **`src/evals/golden/retrieval.golden.json`** (TRACKED;
+  query-based + cross-document — distinct from the per-document extraction goldens). It is
+  authored from the **source** reports, never from extraction output.
+- **Relevance policy v2 is LOCKED**, embedded in that file (`policy_v2` + `validation_history`).
+  Non-negotiables for any future scoring code: spans keyed **`(doc_id, line_range)`**; report
+  **sliced** extracted vs un-extracted (never merge into one number); `resolution_limited` HITs go
+  in a **separate slice** (never silently upgraded to clean); **§7** keeps unmodeled-entity
+  (deal/M&A) content out of every recall denominator; the containment threshold **T is DEFERRED** —
+  calibrate against the first real index, do **not** tune it from labels
+  (see `docs/LEARNINGS.md` 2026-06-11).
+- **No loader / eval code exists yet** (deliberate — built when the retriever does); the JSON is
+  the contract. Retrieval **design** (retrieval units, embeddings, FAISS/BM25 + fusion) is the
+  **next** conversation — do not add it here.
+
 ## Run & test
 
 ```bash

@@ -5,6 +5,68 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 3 — Retrieval golden LOCKED + persisted (policy v2) (2026-06-11)
+
+**AUTHORITATIVE STATUS:** Phase 3 is at **"retrieval golden locked + persisted; retrieval
+design NOT yet started."** The retrieval relevance-criteria **policy v2 is LOCKED** and the
+**retrieval golden v1 is persisted and tracked**. No retriever, embeddings, FAISS, BM25, fusion,
+or any retrieval implementation exists or has been designed — that is the **next** conversation
+(a retrieval **design** phase, which itself precedes any implementation planning). Do not read
+this milestone as "retrieval started."
+
+### What this milestone is
+- A **labeling** deliverable, not a build one. The retrieval golden is the fixed input the
+  (future) retrieval eval will score against — the Phase-3 analog of the Phase-2 extraction
+  golden. It is authored from the **source documents**, never from extraction output.
+
+### Persisted artifact
+- **`src/evals/golden/retrieval.golden.json`** (TRACKED, like the extraction goldens; `data/`
+  stays gitignored). New top-level schema `retrieval_golden_schema_version="1"` — it is
+  **query-based + cross-document**, distinct from the per-document extraction goldens
+  (`takeda`/`novartis.golden.json`, which carry `golden_schema_version`). Loadable structured
+  data (not a flattened table); each query carries text / type / §3 construct / slice /
+  `(doc_id, line_range)` golden spans + verbatim / per-span §1 + §5 verdicts / coverage
+  structure. The full **policy v2** text + validation history are embedded in the file
+  (`policy_v2`, `validation_history`) — that block is policy v2's canonical home.
+- 10 seed queries: **9 scored, 1 (Q2 Avidity) §7-excluded** as unmodeled-entity (deal/M&A).
+  Constructs: single ×5, set-of-singles ×1 (Q1), comparison ×1 (Q5), aggregate ×1 (Q4),
+  single-per-region ×1 (Q3). Slice: extracted ×8, mixed ×1 (Q5), excluded ×1.
+
+### Locked this milestone
+- **Policy v2 locked** with two §3 clarifications added: (1) **bounded set-of-singles vs
+  aggregate** is decided by *closed-and-query-defined* (the query names the facts; a literal
+  source value like "Multiple Indications" does NOT make it an aggregate) vs
+  *open-and-corpus-defined* (the corpus determines membership/count); (2) the **comparison
+  construct** (two scores: presence + attribute coverage) is recorded as **validated on its
+  motivating case only** (Q5) — a **known limitation**, NOT settled; the **zero-qualifying-asset
+  case is untested** and it will be revised on the first future comparison that exposes a gap.
+- **Validation history** (in-file): two gates (Q3 → §5 v2 sibling rule; Q5 → §3 v2 two-score
+  comparison) + a labeling pass with a tripwire on the first new relational query. **Tripwire
+  stayed DRY** — §3 v2 **aggregate** construct **validated** on Q4; pass ran to completion.
+- **T (containment threshold) DEFERRED with a stated trigger** — not an oversight. Provenance
+  `line_range`s as stand-in units bias containment to ≈1.0 (bimodal 1.0/0.0), so neither the
+  gates nor the pass can falsify T. **Trigger: calibrate against the first real retrieval index**
+  (where sub-T containment can occur). See LEARNINGS 2026-06-11.
+
+### Findings carried forward (the backbone argument)
+- **Two distinct entity-leg blindnesses**, both reachable only by the chunk leg: (a) **by
+  un-extraction** — Novartis's only *approved* IgAN asset **Vanrafia/atrasentan** sits in an
+  un-extracted chunk (`q1-2026…`, L443–445); (b) **by misclassification** — the Takeda plasma
+  reg-events (L555–581 + progress) are in *extracted* chunks but emitted as Program `stage`, not
+  `RegulatoryEvent`. These are the concrete, portfolio-valuable reasons chunk retrieval is the
+  baseline/backbone (entity retrieval is a measured layer on top).
+- Q3 is the canonical **resolution_limited** case (3 RL spans); Q5 the canonical **comparison**.
+
+### Next — retrieval DESIGN conversation (NOT started; do not begin without kickoff)
+- A fresh design phase (chunk-vs-entity retrieval units, embeddings model + quota, FAISS/BM25
+  hybrid + fusion, retrieval metrics wiring) — **out of scope for this milestone by instruction.**
+  Reminder from orientation: `faiss-cpu` + `rank-bm25` are NOT yet in `pyproject.toml` (deferred
+  to phase start), and the embeddings model/quota is unpinned.
+- The retrieval golden has **no loader module yet** (deliberate — a loader is retrieval-eval code,
+  built when the retriever exists). The JSON is the contract.
+
+---
+
 ## Phase 2 — COMPLETE: eval harness + golden baseline (2026-06-10)
 
 **Current authoritative state** (supersedes the Stage 1 entry below). Branch
