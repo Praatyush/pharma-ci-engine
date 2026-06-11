@@ -1,5 +1,32 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-11 — Span-keyed fusion adopted; parameter-free fusion CANNOT preserve unique reach
+
+**What:** Cross-leg fusion is now `rag.fusion.rrf_fuse_by_span` — RRF keyed on the span
+`(doc_id, line_range)` (the evidence identity the scorer overlap-tests), NOT on opaque per-leg unit
+objects. Co-located chunk+entity units (an entity unit's `line_range` IS its source chunk's range)
+collapse to one fused entry; each leg contributes its best rank; agreement sums. **Adopted** over
+naive disjoint-set RRF because it lifts headline recall (@1 0.518→0.681, @3 0.755→0.903,
+@10 0.935→0.972), eliminates the single-fact dinging (single Δ@3 −0.167→+0.056), and preserves the
+buried-asset lift (Q5's three extracted IgAN assets all top-10).
+
+**The load-bearing finding — parameter-free fusion cannot preserve UNIQUE REACH.** Agreement-
+rewarding RRF structurally demotes a unique-reach span (covered by ONE leg, no agreement to sum):
+the un-extracted Vanrafia went chunk-only rank **6 → naive-fused 11 → span-keyed 33** — the *more
+correct* fusion demotes it HARDER, because ~30 agreement-boosted / better-ranked spans legitimately
+outrank a single weak term (1/66). Recovering it requires **reserving top-k slots for the backbone
+leg's unique units — a count/cutoff, uncalibrable on the 9-query golden.** This is the **third
+instance of the same lockout** (weighted-fusion α, then containment T, now a unique-reach slot
+count): when the golden can't calibrate a knob, the knob stays out and the limitation is reported,
+not papered over. **Logged as future work:** unique-reach-preserving (parameter-bearing) fusion.
+
+**Architecture vindication:** the displacement is a FUSION property; the **chunk-leg backbone serves
+Vanrafia's unique reach standalone (rank 6)** — exactly why the chunk leg is the locked reachability
+backbone and Stage A ships standalone. **Fusion serves breadth; the backbone serves unique reach.**
+(And the §A.6 finer-chunk lever's main motivation — the aggregate/comparison gap — is now largely
+served by entity reranking via span-keyed fusion, so finer-chunk re-chunking stays deferred, not
+actioned.)
+
 ## 2026-06-11 — Gate A: chunk-leg baseline + the T thread RESOLVED (inert at chunk grain)
 
 **What:** Gate A (A2b — the real retriever × the verified scorer over the 9 scored golden queries)

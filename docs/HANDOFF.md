@@ -5,6 +5,58 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 3 — COMPLETE (hybrid retrieval): span-keyed fusion adopted (Gate B-revised) (2026-06-11)
+
+**AUTHORITATIVE STATUS:** **Phase 3 COMPLETE on branch `phase-3-retrieval`; ready for pre-merge
+review.** Hybrid retrieval over the extracted corpus is built and measured — chunk-leg backbone +
+lean entity leg + span-keyed fusion, scored by a span-based retrieval golden through a layered eval.
+**NOT merged to main** — the merge is a separate reviewed step (like Phase 2 PR #1).
+
+### Gate B-revised — fusion adopted
+- **Fusion = `rag.fusion.rrf_fuse_by_span`** (cross-leg RRF keyed on the `(doc_id, line_range)` span
+  identity; co-located chunk+entity units collapse, agreement sums). **Adopted** over naive
+  disjoint-set RRF: lifts headline recall (@1 **0.518→0.681**, @3 **0.755→0.903**, @10
+  **0.935→0.972**), eliminates single-fact dinging (single Δ@3 **−0.167→+0.056**), preserves the
+  buried-asset lift (Q5 assets all top-10). Parameter-free (no weight/cutoff/N; `k_rrf=60` locked).
+- **Impossibility finding (load-bearing):** parameter-free fusion **cannot preserve unique reach** —
+  agreement-rewarding RRF structurally demotes unique-reach spans (Vanrafia **6→11→33**; span-keyed
+  demotes harder). Recovery needs an uncalibrable slot-count → the **α/T lockout, third instance**.
+  Logged as future work (parameter-bearing unique-reach fusion). See LEARNINGS 2026-06-11.
+- **Architecture vindicated:** the displacement is a *fusion* property; the chunk-leg backbone serves
+  Vanrafia standalone (rank 6) — why the chunk leg is the locked backbone and Stage A ships alone.
+  **Fusion serves breadth; the backbone serves unique reach.**
+- **Finer-chunk §A.6:** the aggregate/comparison gap is substantially entity-leg-addressable (Gate B)
+  and span-keyed fusion captures most of that lift → residual gap small; finer-chunk re-chunking
+  remains **deferred / logged, not actioned** (its main motivation is now served).
+
+### Phase 3 — what was built + measured (the layered eval)
+- **Retrieval (`src/rag/`):** chunk leg (`fastembed` bge-small + FAISS + BM25 + RRF over the 1500/200
+  ingestion chunks, **134 units**); lean entity leg (`entity_leg.py` — serialized facts, **307
+  units**, IDENTICAL mechanism so a null is trustworthy); **span-keyed cross-leg fusion**. Local,
+  quota-free, config-isolated embeddings; indexes persisted to gitignored `data/rag/`.
+- **Eval (`src/evals/`):** relevance policy v2 (two policy gates Q3/Q5 → §5 sibling rule + §3
+  two-score comparison; full labeling pass; tripwire dry) → leg-agnostic **shared scorer** (A1,
+  verified 10/10) → **Gate A** chunk baseline → **Gate B** entity decomposition → **Gate B-revised**
+  fusion. Golden: `src/evals/golden/retrieval.golden.json`.
+- **Key results:**
+  - chunk leg **strong-on-localized / weak-on-distributed** (localized to coarse-chunk dilution of
+    table-spread/buried signal; macro recall@k {0.518/0.741/0.741/0.903}, always reported sliced).
+  - entity leg **confirmed non-null on aggregate/comparison** (the buried-extracted-fact reranking
+    hypothesis, evidenced: Q5's IgAN assets chunk 18–49 → entity 1–5).
+  - **two entity blindness modes measured:** Vanrafia (un-extraction — entity structurally 0);
+    Q1 plasma (misclassification — **partially compensated by serialization, entity rank 3**).
+  - **T structurally inert at chunk grain** (degenerate-bimodal containment; recall threshold-free).
+  - **fusion agreement-vs-unique-reach tension** logged (above).
+- **Open / future-work items:** parameter-bearing unique-reach-preserving fusion; finer-chunk §A.6
+  re-chunking; the **comparison construct validated on Q5 only** (zero-qualifying-asset case still
+  untested).
+
+### Next — pre-merge review, then merge to main (separate step)
+- Review branch `phase-3-retrieval`; merge → `main` as a reviewed PR (like Phase 2). Phase 4
+  (research agent + live tools) follows per `ARCHITECTURE.md` build order.
+
+---
+
 ## Phase 3 Stage A — Gate A REVIEWED + RATIFIED (2026-06-11)
 
 **AUTHORITATIVE STATUS:** **Gate A reviewed + ratified (T inert; finer-chunk deferred post-Stage-B;
