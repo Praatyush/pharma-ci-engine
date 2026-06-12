@@ -311,13 +311,18 @@ math is parametric in `iterations`, not pinned to a number.)
 
 ### 5.5 State machine (code)
 
-The loop, owned in code, over ASSESS verdicts:
+The loop, owned in code. **Every branch conditions only on code-held values — the ASSESS verdict,
+the validation outcome (§5.8), and the surviving-claim count — never on model self-assessment.** The
+terminal state is computed from these, not declared by the model:
 
-- **`sufficient` → SYNTHESIZE → `answered`.**
-- **`exhausted` + partial evidence → SYNTHESIZE → `partially answered` / `answered`** per the
-  surviving coverage (how much of the reference answer the evidence actually supports).
-- **`exhausted` + nothing, or the budget cap is hit → `insufficient evidence`**, with **trajectory
-  receipts** (what was searched, what gaps remain).
+- ASSESS **`sufficient`** + SYNTHESIZE output **survives validation with no claims dropped** →
+  **`answered`**.
+- ASSESS **`sufficient`** + the validation **degrade path dropped one or more claims** (§5.8) →
+  **`partially answered`**.
+- ASSESS **`exhausted`** + **one or more surviving claims** → **`partially answered`** (always —
+  `exhausted` means named gaps remain, so `answered` is **unreachable** from this branch).
+- **No surviving claims on any path, or the budget cap is hit** → **`insufficient evidence`**, with
+  **trajectory receipts** (what was searched, what gaps remain).
 
 The state machine is **unit-testable without any API calls** — feed it canned ASSESS verdicts and
 assert the transitions and the terminal state. This testability is one of the reasons the loop is
