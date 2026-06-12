@@ -5,6 +5,21 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 3 — MERGED to main (2026-06-12)
+
+**AUTHORITATIVE STATUS:** **Phase 3 COMPLETE and merged to `main`; Phase 4 not started.** Branch
+`phase-3-retrieval` was merged into `main` as a `--no-ff` **merge commit `22efdd2`** (full branch
+history preserved, no squash — matching the Phase-2 PR-merge convention), and the
+engineering-decisions writeup (`docs/ENGINEERING_DECISIONS.md`, commit `81d8499`) landed. A pre-merge
+release-readiness audit ran clean — no secrets, no tracked data / indexes / reports, the `.gitignore`
+`data/` mechanism is on `main`, 106 tests passing. This entry's commit also corrects three post-merge
+stale doc references (`src/rag/CLAUDE.md` "no code exists yet"; `ARCHITECTURE.md` "design is a later
+conversation") and documents the retrieval entry points (`retrieval_run`, `retrieval_gate_b`). **Not
+yet pushed to `origin/main`** — local `main` is ahead, pending review. Phase 4 (research agent + live
+tools) follows per `ARCHITECTURE.md` build order; not started.
+
+---
+
 ## Phase 3 — COMPLETE (hybrid retrieval): span-keyed fusion adopted (Gate B-revised) (2026-06-11)
 
 **AUTHORITATIVE STATUS:** **Phase 3 COMPLETE on branch `phase-3-retrieval`; ready for pre-merge

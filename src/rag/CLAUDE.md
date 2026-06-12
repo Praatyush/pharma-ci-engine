@@ -25,9 +25,11 @@ insufficient.
   (deal/M&A) content out of every recall denominator; the containment threshold **T is DEFERRED** —
   calibrate against the first real index, do **not** tune it from labels
   (see `docs/LEARNINGS.md` 2026-06-11).
-- **No retrieval / scorer code exists yet** (deliberate — built per stage, gated); the golden JSON
-  is the eval contract. The retrieval **design is now LOCKED** in `docs/RETRIEVAL_PLAN.md`
-  (see next section) — build against it; do not redesign here.
+- **Retrieval legs + scorer are BUILT and merged** (Phase 3 complete): chunk leg
+  (`src/rag/chunk_leg.py` + `units`/`embeddings`/`dense`/`sparse`), entity leg
+  (`src/rag/entity_leg.py`), span-keyed fusion (`src/rag/fusion.py`), and the shared scorer
+  (`src/evals/retrieval_scorer.py`). The golden JSON is the eval contract; the design is locked in
+  `docs/RETRIEVAL_PLAN.md` (see next section) — build against it, do not redesign here.
 
 ## Retrieval design (Phase 3 — LOCKED; build reference: `docs/RETRIEVAL_PLAN.md`)
 
@@ -55,8 +57,11 @@ Operating locks for this module (full plan + gate artifacts in `docs/RETRIEVAL_P
 ## Run & test
 
 ```bash
-pytest tests/rag -q                # module tests (added in Phase 3)
-# Index build + query CLI TBD (Phase 3)
+pytest tests/rag -q                       # module tests
+python -m src.evals.retrieval_run         # Gate A — chunk-leg recall@k eval (builds/loads data/rag/)
+python -m src.evals.retrieval_gate_b      # Gate B — chunk/entity/fused three-way decomposition
+# The two eval commands require the gitignored corpus (data/reports/) + extraction artifacts
+# (data/eval/extractions/) to be present; how to obtain the corpus is deferred to the README.
 ```
 
 ## Conventions

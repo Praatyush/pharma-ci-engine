@@ -85,7 +85,8 @@ worked example (notably its rich endpoint vocabulary) — now one area among man
   change. The **retrieval-quality** layer's golden is locked + persisted at
   `evals/golden/retrieval.golden.json` (query-based, cross-document), governed by
   the locked relevance **policy v2** embedded in that file — see `docs/HANDOFF.md`
-  (Phase 3) and `src/rag/CLAUDE.md`. (Retrieval *design* is a later conversation.)
+  (Phase 3) and `src/rag/CLAUDE.md`. Retrieval is implemented in `src/rag/`; design locked in
+  `docs/RETRIEVAL_PLAN.md`.
 - **`agent/`** — single research agent: a planning loop, tool definitions, and
   synthesis that **cites sources**. Tools: `corpus_retrieve` (rag),
   `clinicaltrials_lookup`, `fda_lookup`.
