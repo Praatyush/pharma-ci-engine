@@ -1,0 +1,335 @@
+{
+  "retrieval_golden_schema_version": "1",
+  "policy_version": "v2-locked",
+  "kind": "retrieval_golden",
+  "description": "Phase 3 retrieval golden v1: ~10 hand-authored CI queries labeled against retrieval relevance-criteria policy v2. Authored from the SOURCE documents (data/reports/), never from extraction output. Golden spans are keyed (doc_id, line_range) at the finest answer-bearing resolution; line_range is the load-bearing key, verbatim is for human audit. This file is the fixed input the retrieval eval will score against once a retriever exists; it does NOT depend on or describe any retrieval implementation. Unlike the per-document extraction goldens (takeda/novartis.golden.json, which carry golden_schema_version), this is a query-based cross-document artifact with its own schema.",
+  "documents": {
+    "takeda": {"doc_id": "qr2025_q4_Pipeline_table_en", "path": "data/reports/qr2025_q4_Pipeline_table_en.md", "slice": "extracted-in-full (34/34 chunks)"},
+    "novartis": {"doc_id": "q1-2026-interim-financial-report-en", "path": "data/reports/q1-2026-interim-financial-report-en.md", "slice": "partial: only chunks [3,4,12,13,15,16,18,28,29,30,31,32] of 100 are extracted; all other lines are un-extracted territory the entity leg cannot reach"}
+  },
+  "policy_v2": {
+    "1_answer_bearing": "Judge relevance from source, never extraction output. A span is relevant only if read-alone it gives a direct, load-bearing component of the answer AND the fact's key is co-present with the value (for a pipeline/Program fact: asset + indication + the region/stage the query demands). A drug matched against the WRONG indication is NOT answer-bearing (validated at Q5: iptacopan-for-MG excluded from the IgAN answer). Excludes keyword-present non-answers: sales rows, positional-stage summary cells, bare-indication fragments.",
+    "2_containment": "A retrieved unit HITS a golden span when >= T of the golden span's lines fall inside the unit (direction = how much of the answer the unit covers). T = 0.5 PROVISIONAL and explicitly DEFERRED — see t_calibration. answer-coverage-only; NOT the mashed-row false-credit detector (that is 5_resolution_limited).",
+    "3_construct_single": "Single fact -> OR-of-locations: the relevant set is the union of source locations where the fact is independently answer-bearing; the fact HITS if any one location is retrieved (>=T). Per-fact spans on mashed rows each get their own golden span at finest answer-bearing resolution.",
+    "3_construct_set_of_singles_vs_aggregate": "NEW (v2 clarification). The construct for a multi-fact query is decided by whether its relevant set is CLOSED or OPEN. (a) set-of-singles (bounded): relevant set is closed and knowable from the query itself — the query NAMES the specific entities/facts; each is an independent single (OR-of-locations) and ALL are required. Subtlety from Q1: a phrase like 'Multiple Indications' that is a literal SOURCE VALUE does NOT make a query an aggregate — what matters is whether the set is closed, not whether a word sounds categorical. (b) aggregate (open): relevant set is an open category the CORPUS defines — the query names a category, not a list ('the CV pipeline', 'all Phase 3 trials'); corpus determines membership/count; scored as recall-fraction over the row-set, graded, no importance bar. The test is closed-and-query-defined vs open-and-corpus-defined, NOT merely 'names specifics vs names a category'.",
+    "3_construct_comparison": "Comparison query -> TWO coverage scores, never collapsed: presence_coverage = AND(entities compared) o OR(an entity's qualifying assets) o OR(locations) — does each side have a qualifying asset (company/entity grain is the headline; one-side-only scores 1/2). attribute_coverage = AND(qualifying assets) o OR(locations) — is the attribute captured for ALL qualifying assets. Both sliced extracted/un-extracted, keyed (doc_id, line_range). Two scores because one number lies when an entity has multiple assets at different attribute-values (Q5: Novartis = 3 IgAN assets at approved/filed/Phase 3).",
+    "3_construct_comparison_STATUS": "KNOWN LIMITATION, not settled validation. The comparison construct has been exercised ONLY on its motivating case (Q5, IgAN). It is NOT yet validated on a fresh comparison instance, and in particular has NOT been tested against an entity with ZERO qualifying assets (where presence_coverage must score that side 0). To be re-evaluated, and revised if needed, on the first future comparison query that exposes a deficiency.",
+    "3_construct_aggregate_VALIDATION": "VALIDATED on first new instance (Q4, CV pipeline): recall-over-row-set held; no new primitive needed. Caveat: the category boundary (denominator N) is a 1_answer_bearing labeling call (e.g. is PAH cardiovascular? is a marketed drug's new-indication row 'pipeline'?), not a representational failure of the recall construct.",
+    "4_conservative_miss": "Borderline containment -> record the stricter outcome (MISS), tag borderline_containment. Never fudge toward HIT. Inert this pass (containment was bimodal 1.0/0.0 — see t_calibration).",
+    "5_resolution_limited": "Fires when no answer-bearing span isolates the fact from its SIBLINGS, keyed to 1_answer_bearing. A 'sibling' (v2) is a COMPETING ANSWER TO THE SAME QUERY SLOT — only another fact that could answer the same query counts. A different-indication fact co-located in the same block is NOT a sibling and does NOT trigger the flag (Q1 Mult-Ind+AE, Q5 mezagitamab ITP+IgAN, Q7 VAY736 6-indication block all stay clean). SPAN-LEVEL not query-level: a fact may be resolution_limited in one location and clean in another; the golden links the locations so a retriever earns a clean HIT only by returning the isolating location. A resolution_limited HIT is reported in a separate slice, never silently upgraded to clean.",
+    "6_slice_and_keying": "Every golden span keyed (doc_id, line_range) — line_range alone collides across documents. Each query/span tagged extracted vs un-extracted (entity leg structurally cannot reach un-extracted). Reporting ALWAYS sliced — never merge extracted and un-extracted into one coverage number.",
+    "7_out_of_scope": "Unmodeled-entity content (deals/M&A) stays OUT of the retrieval golden and out of every recall denominator; may be cited in writeups as a schema-scope illustration only (Q2 Avidity).",
+    "t_calibration": "T=0.5 is a DEFERRED DECISION with a stated trigger, not an oversight. Neither the two gates nor the labeling pass can falsify T: using extraction-provenance line_ranges as stand-in retrieved units biases containment to ~1.0 by construction (a fact's authored span sits inside the very chunk that extracted it), so containment is bimodal (1.0/0.0) and no span straddles a unit boundary. TRIGGER: calibrate T against the first real retrieval index, where sub-T containment can actually occur. Do not tune T from labeling."
+  },
+  "validation_history": {
+    "method": "Two policy gates (Q3, Q5) labeled end-to-end to discover policy holes, then a full labeling pass with a tripwire on the first new relational query of each shape.",
+    "gate_Q3": "Resolution_limited gate. Broke v0 §5 (keyed on surface-token line-uniqueness; the mashed oveporexton main row defeated it) -> produced v2 §5 (sibling = competing same-slot answer; span-level).",
+    "gate_Q5": "Comparison gate. Broke v1 §3 (one-fact-one-span could not represent a multi-asset/multi-stage company) -> produced v2 §3 comparison (two coverage scores). Also caught a missed asset (Vanrafia).",
+    "pass_tripwire": "Tripwire on first new aggregate (Q4): §3 v2 aggregate construct HELD (recall-over-row-set; no new primitive). Tripwire stayed DRY. No new comparison appears in the seed set, so the comparison construct was NOT re-validated (see 3_construct_comparison_STATUS).",
+    "inert_this_pass": "§4 borderline_containment never fired (bimodal containment). §5 resolution_limited fired only at Q3; its v2 sibling-narrowing was exercised in the keep-clean direction (Q1, Q5, Q7) but not in the fire direction on any newly-labeled query."
+  },
+  "queries": [
+    {
+      "id": "Q1",
+      "query": "What is the regulatory approval status of Takeda's plasma-derived IVIG products (Glovenin-I / Gammagard Liquid) for autoimmune encephalitis and multiple indications in Japan?",
+      "type": "regulatory",
+      "construct": "set-of-singles",
+      "slice": "extracted",
+      "scored": true,
+      "seam": "plasma ceiling — entity leg emits these reg-events as Program stages, not RegulatoryEvents (extracted-but-misclassified); chunk leg is the only backbone",
+      "facts": [
+        {
+          "fact_id": "Q1.1",
+          "description": "TAK-961 (KENKETU GLOVENIN-I) · Multiple Indications · JP · Approved Feb 2026",
+          "spans": [
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [555, 564], "verbatim": "TAK-961 <IVIG> KENKETU GLOVENIN-I (Japan) Immunoglobulin (10%) [human] (injection) ... Multiple Indications / Japan Approved (Feb 2026)", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "main_table"},
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [719, 723], "verbatim": "TAK-961 <10% IVIG> Multiple Indications  Japan / Approved / (Feb 2026)", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "progress_row"}
+          ]
+        },
+        {
+          "fact_id": "Q1.2",
+          "description": "TAK-961 · Autoimmune Encephalitis (AE) · JP · Filed Oct 2025",
+          "spans": [
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [555, 566], "verbatim": "TAK-961 <IVIG> KENKETU GLOVENIN-I (Japan) ... Autoimmune Encephalitis (AE) / Japan Filed (Oct 2025)", "answer_bearing": "answer-bearing", "resolution": "clean", "resolution_note": "span bundles the Multiple-Indications fact (L563-564) but that is a DIFFERENT indication, not a sibling per §5 v2", "role": "main_table"},
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [771, 775], "verbatim": "TAK-961 <10% IVIG> Autoimmune Encephalitis (AE) Japan / Filed / (Oct 2025)", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "progress_row"}
+          ]
+        },
+        {
+          "fact_id": "Q1.3",
+          "description": "TAK-339 (GLOVENIN-I / GAMMAGARD LIQUID) · Multiple Indications · JP · Approved July 2025",
+          "spans": [
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [567, 577], "verbatim": "TAK-339 <IVIG> GLOVENIN-I (Japan) GAMMAGARD LIQUID (U.S.) ... Multiple Indications / Japan Approved (July 2025)", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "main_table"},
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [801, 805], "verbatim": "TAK-339 <10% IVIG> Multiple Indications  Japan / Approved / (July 2025)", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "progress_row"}
+          ]
+        },
+        {
+          "fact_id": "Q1.4",
+          "description": "TAK-339 · Autoimmune Encephalitis (AE) · JP · Filed Oct 2025",
+          "spans": [
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [567, 579], "verbatim": "TAK-339 <IVIG> GLOVENIN-I / GAMMAGARD LIQUID ... Autoimmune Encephalitis (AE) / Japan Filed (Oct 2025)", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "main_table"},
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [776, 780], "verbatim": "TAK-339 <10% IVIG> Autoimmune Encephalitis (AE) Japan / Filed / (Oct 2025)", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "progress_row"}
+          ]
+        }
+      ],
+      "stand_in_retrieval": {"units": [[537, 618]], "result": "main plasma chunk (537,618) contains all 4 main-table spans -> 4/4 facts HIT (each 1.00)"},
+      "resolution_limited_span_count": 0,
+      "notes": "All facts in EXTRACTED chunks, but the entity leg emitted them as Program stage (approved/filed) not RegulatoryEvent — entity-leg blindness by MISCLASSIFICATION (distinct from Q5 Vanrafia's blindness by un-extraction). Modeled as set-of-singles: the query NAMES the products and indications, so the relevant set is closed."
+    },
+    {
+      "id": "Q2",
+      "query": "How much did Novartis pay for Avidity Biosciences and when did the acquisition close?",
+      "type": "deal/M&A",
+      "construct": null,
+      "slice": "un-extracted",
+      "scored": false,
+      "excluded": {
+        "rule": "§7",
+        "rationale": "Deal/M&A is an unmodeled entity in the v1 schema; out of retrieval-golden scope and out of every recall denominator.",
+        "illustrative_spans": [
+          {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [2540, 2575], "verbatim": "Acquisition of Avidity Biosciences, Inc. ... February 27, 2026 ... USD 72.00 per share ... approximately USD 12.0 billion", "note": "acquisition note, deep un-extracted territory"},
+          {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [870, 911], "verbatim": "acquisition of Avidity Biosciences, Inc. ... USD 12.0 billion ... bridge loan of USD 11.0 billion", "note": "cash-flow review, un-extracted"}
+        ],
+        "double_seam": "un-extracted AND structurally unmodeled — entity leg blind two ways"
+      }
+    },
+    {
+      "id": "Q3",
+      "query": "When was oveporexton (TAK-861) filed for narcolepsy type 1 in the US, and how do its US/Japan/China filing dates differ?",
+      "type": "regulatory",
+      "construct": "single (per-region facts)",
+      "slice": "extracted",
+      "scored": true,
+      "seam": "Takeda mashed table row — CANONICAL resolution_limited example",
+      "facts": [
+        {
+          "fact_id": "Q3.US",
+          "description": "TAK-861 (oveporexton) · narcolepsy type 1 · US · Filed Feb 2026",
+          "spans": [
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [739, 743], "verbatim": "TAK-861 <oveporexton> Narcolepsy type 1 U.S. / Filed / (Feb 2026)", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "progress_row (isolating location)"},
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [334, 347], "verbatim": "TAK-861 <oveporexton> ... Narcolepsy type 1 / Japan / U.S. / China / EU / Filed (Mar 2026) ... Filed (Feb 2026)", "answer_bearing": "answer-bearing (block only)", "resolution": "resolution_limited", "sibling_reasoning": "region->date binding is POSITIONAL across blank-line gaps; the minimal answer-bearing span (L334-347) necessarily contains the JP (L344) and CN (L349) dates — competing same-slot answers it cannot isolate", "role": "main_table"}
+          ]
+        },
+        {
+          "fact_id": "Q3.JP",
+          "description": "TAK-861 · narcolepsy type 1 · JP · Filed Mar 2026",
+          "spans": [
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [727, 731], "verbatim": "TAK-861 <oveporexton> Narcolepsy type 1 Japan / Filed / (Mar 2026)", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "progress_row"},
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [334, 344], "verbatim": "TAK-861 ... Narcolepsy type 1 / Japan ... / Filed (Mar 2026)", "answer_bearing": "answer-bearing (block only)", "resolution": "resolution_limited", "sibling_reasoning": "same mashed block; cannot isolate JP from US/CN", "role": "main_table"}
+          ]
+        },
+        {
+          "fact_id": "Q3.CN",
+          "description": "TAK-861 · narcolepsy type 1 · CN · Filed Jan 2026",
+          "spans": [
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [766, 770], "verbatim": "TAK-861 <oveporexton> Narcolepsy type 1 China / Filed / (Jan 2026)", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "progress_row"},
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [334, 349], "verbatim": "TAK-861 ... Narcolepsy type 1 / ... China / ... Filed (Jan 2026)", "answer_bearing": "answer-bearing (block only)", "resolution": "resolution_limited", "sibling_reasoning": "same mashed block; cannot isolate CN from US/JP", "role": "main_table"}
+          ]
+        }
+      ],
+      "relational_note": "EU is NOT a filing (L343->L351 = P-III), correctly out of the member set. The 'how do they differ' sub-question is a relation over the three regional facts (CN Jan -> US Feb -> JP Mar); it is answered once all three are retrieved. It was the v0/v1 break that motivated §3; under v2 it is the union of the three per-region single facts.",
+      "stand_in_retrieval": {"units": [[302, 389], [699, 733], [734, 806]], "result": "main chunk (302,389) -> resolution_limited HIT on US/JP/CN (1.00 each, REPORTED IN SEPARATE SLICE, never clean); progress (699,733) -> clean JP; progress (734,806) -> clean US + CN"},
+      "resolution_limited_span_count": 3
+    },
+    {
+      "id": "Q4",
+      "query": "What does Novartis's cardiovascular / lipid-lowering pipeline look like — which assets and indications?",
+      "type": "aggregate",
+      "construct": "aggregate",
+      "slice": "extracted",
+      "scored": true,
+      "aggregate": {
+        "category": "Novartis cardiovascular / lipid-lowering pipeline (development rows)",
+        "denominator_note": "CV/lipid boundary is a §1 answer-bearing labeling call, not a §3 break. Core N=7; LTP001 (PAH) included as borderline -> N=8. Marketed CV products (Entresto, Leqvio commercial, Vanrafia) are excluded as not-pipeline; Leqvio's NEW-indication development rows are included. Each answer-bearing ROW counts equally (no importance bar); multi-indication compounds contribute one span per indication-row.",
+        "row_set": [
+          {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [1009, 1009], "verbatim": "DII235 CVRR-Lp(a) ≥2029 2", "asset": "DII235", "indication": "CVRR-Lp(a)", "phase": "P2", "answer_bearing": "answer-bearing", "chunk": [993, 1031]},
+          {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [1037, 1038], "verbatim": "Leqvio Secondary prevention of cardiovascular events in patients with elevated LDL-C 2027 3", "asset": "Leqvio", "indication": "secondary prevention CV events (LDL-C)", "phase": "P3", "answer_bearing": "answer-bearing", "chunk": [1032, 1064]},
+          {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [1039, 1039], "verbatim": "Primary prevention CVRR ≥2029 3", "asset": "Leqvio", "indication": "primary prevention CVRR", "phase": "P3", "answer_bearing": "answer-bearing", "chunk": [1032, 1064]},
+          {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [1055, 1056], "verbatim": "MAA868 Atrial fibrillation 2028 3 / (abelacimab)", "asset": "abelacimab (MAA868)", "indication": "atrial fibrillation", "phase": "P3", "answer_bearing": "answer-bearing", "chunk": [1032, 1064]},
+          {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [1057, 1058], "verbatim": "PAC001 ASCVD ≥2029 2 / (pacibekitug)", "asset": "pacibekitug (PAC001)", "indication": "ASCVD", "phase": "P2", "answer_bearing": "answer-bearing", "chunk": [1032, 1064]},
+          {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [1060, 1060], "verbatim": "QCZ484 Hypertension ≥2029 2", "asset": "QCZ484", "indication": "hypertension", "phase": "P2", "answer_bearing": "answer-bearing", "chunk": [1032, 1064]},
+          {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [1061, 1063], "verbatim": "TQJ230 Secondary prevention of cardiovascular events in patients with elevated levels of lipoprotein(a) 2026 3 / (pelacarsen)", "asset": "pelacarsen (TQJ230)", "indication": "secondary prevention CV events (Lp(a))", "phase": "P3", "answer_bearing": "answer-bearing", "chunk": [1032, 1064]},
+          {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [1050, 1050], "verbatim": "LTP001 Pulmonary arterial hypertension ≥2029 2", "asset": "LTP001", "indication": "pulmonary arterial hypertension", "phase": "P2", "answer_bearing": "answer-bearing (borderline-CV; denominator call)", "chunk": [1032, 1064]}
+        ],
+        "phase_encoding_note": "phases are BARE NUMBERS in source ('3'/'2') — answer-bearing to a human reader, but a retrieval-surface concern (a keyword leg will not bridge 'Phase 3' <-> '3'). Not a labeling failure."
+      },
+      "stand_in_retrieval": {"recall": {"top_1": "{(1032,1064)} -> 7/8 = 0.875 (misses DII235)", "top_2": "{(1032,1064),(993,1031)} -> 8/8 = 1.00"}},
+      "resolution_limited_span_count": 0,
+      "notes": "TRIPWIRE query (first new aggregate). §3 v2 aggregate construct VALIDATED — recall-over-row-set represents the answer; no new primitive. §5 inert (each CV row is a distinct answer, not a competing same-slot sibling)."
+    },
+    {
+      "id": "Q5",
+      "query": "Which of Takeda and Novartis have an IgA nephropathy (IgAN) asset, and at what stage?",
+      "type": "comparison",
+      "construct": "comparison",
+      "slice": "mixed",
+      "scored": true,
+      "seam": "cross-document; CANONICAL comparison example (motivating case for §3 v2 two-score construct)",
+      "comparison": {
+        "entities": ["Takeda", "Novartis"],
+        "presence_coverage": {"formula": "AND(entities) o OR(entity's qualifying assets) o OR(locations)", "score": "2/2", "detail": "Takeda satisfied via mezagitamab; Novartis satisfied via any one of {Vanrafia, Fabhalta, zigakibart}"},
+        "attribute_coverage": {"attribute": "stage", "formula": "AND(qualifying assets) o OR(locations)", "score": "3/4", "stand_in_units": [[202, 301], [956, 983], [993, 1031]], "detail": "mezagitamab/Fabhalta/zigakibart HIT; Vanrafia MISS (un-extracted)", "sliced": {"extracted": "3/3", "un_extracted": "0/1", "note": "§6 corpus-wide extracted/un-extracted partition over the 4 member assets (matches the A1 scorer). Extracted 3/3 = mezagitamab (Takeda) + Fabhalta + zigakibart, all hit; sole un-extracted miss = Vanrafia (atrasentan), Novartis's APPROVED IgAN asset, reachable only by the chunk leg (the backbone-argument signal)."}}
+      },
+      "member_facts": [
+        {
+          "member_id": "Q5.takeda.mezagitamab",
+          "entity": "Takeda",
+          "asset": "mezagitamab (TAK-079)",
+          "attribute_stage": "P3",
+          "slice": "extracted",
+          "spans": [
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [277, 288], "verbatim": "TAK-079 <mezagitamab> Anti-CD38 monoclonal antibody (injection) ... Immunoglobulin A nephropathy / Global / P-III", "answer_bearing": "answer-bearing", "resolution": "clean", "resolution_note": "span bundles the ITP-P3 program (L283-285) but ITP is a different indication, not a sibling for an IgAN-stage query per §5 v2", "role": "main_table"},
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [809, 811], "verbatim": "TAK-079 <mezagitamab> Immunoglobulin A nephropathy Global P-III", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "progress_row"}
+          ]
+        },
+        {
+          "member_id": "Q5.novartis.vanrafia",
+          "entity": "Novartis",
+          "asset": "Vanrafia (atrasentan)",
+          "attribute_stage": "approved (US + CN, 2025; marketed)",
+          "slice": "un-extracted",
+          "spans": [
+            {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [443, 445], "verbatim": "Vanrafia (USD 16 million) sales reflect continued launch execution following 2025 approvals in the US and China, as the first and only selective endothelin A (ETA) receptor antagonist for proteinuria reduction in primary IgA nephropathy (IgAN).", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "franchise_commentary (UN-EXTRACTED — entity leg cannot reach)"}
+          ]
+        },
+        {
+          "member_id": "Q5.novartis.fabhalta",
+          "entity": "Novartis",
+          "asset": "Fabhalta (iptacopan)",
+          "attribute_stage": "filed (JP submission Q1 2026; FDA priority review; PhIII APPLAUSE-IgAN complete)",
+          "slice": "extracted",
+          "spans": [
+            {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [974, 978], "verbatim": "Fabhalta IgA nephropathy ... Q1 2026 – JP submission / Final two-year results from PhIII APPLAUSE-IgAN study published in NEJM / FDA granted priority review for traditional approval", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "awaiting-decisions_table"}
+          ]
+        },
+        {
+          "member_id": "Q5.novartis.zigakibart",
+          "entity": "Novartis",
+          "asset": "zigakibart (FUB523)",
+          "attribute_stage": "P3 (planned submission 2027)",
+          "slice": "extracted",
+          "spans": [
+            {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [1015, 1016], "verbatim": "FUB523 IgA nephropathy 2027 3 / (zigakibart)", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "pipeline_table"}
+          ]
+        }
+      ],
+      "resolution_limited_span_count": 0,
+      "notes": "§1 excluded keyword-present non-answers (Vanrafia sales row L410; iptacopan-for-MG pipeline rows L1040-1043 = wrong indication; bare 'IgA Nephropathy (IgAN),' fragment L5034) and the positional-stage summary cell (Takeda L30). The approved Novartis asset (Vanrafia) is UN-EXTRACTED — the single most portfolio-valuable span the entity leg cannot reach."
+    },
+    {
+      "id": "Q6",
+      "query": "What were Kesimpta's Q1 2026 net sales and YoY growth?",
+      "type": "market",
+      "construct": "single",
+      "slice": "extracted",
+      "scored": true,
+      "facts": [
+        {
+          "fact_id": "Q6.1",
+          "description": "Kesimpta · Q1 2026 net sales USD 1 164 million · +29% (+26% cc)",
+          "spans": [
+            {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [598, 600], "verbatim": "Kesimpta (USD 1 164 million, +29%, +26% cc) sales grew across all regions ... now approved in 94 countries with more than 200,000 patients treated since launch.", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "commentary (self-contained: brand+value+growth+cc)"},
+            {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [566, 572], "verbatim": "Kesimpta 1 164 / 899 / 29 / 26", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "neuroscience_sales_table (period via header L542)"}
+          ]
+        }
+      ],
+      "stand_in_retrieval": {"units": [[525, 579], [580, 636]], "result": "HIT 1.00 (both locations extracted)"},
+      "resolution_limited_span_count": 0
+    },
+    {
+      "id": "Q7",
+      "query": "Did Novartis's ianalumab meet its primary endpoint in the Phase III warm autoimmune haemolytic anaemia trial?",
+      "type": "trial",
+      "construct": "single",
+      "slice": "extracted",
+      "scored": true,
+      "facts": [
+        {
+          "fact_id": "Q7.1",
+          "description": "ianalumab (VAY736) · wAIHA · PhIII VAYHIA did NOT meet primary endpoint (met_primary_endpoint=false)",
+          "spans": [
+            {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [1070, 1075], "verbatim": "Warm autoimmune hemolytic anemia 2027 3 – PhIII trial (VAYHIA) did not meet primary endpoint in April / While not statistically significant, ianalumab showed numerical improvements vs placebo / Safety profile of ianalumab was consistent with prior clinical studies", "answer_bearing": "answer-bearing", "resolution": "clean", "resolution_note": "VAY736 block stacks 6 indications, but per §5 v2 only another wAIHA trial fact is a sibling; there is one. Span self-identifies the asset (ianalumab, L1072), so it does not need the block header.", "role": "pipeline_table"}
+          ]
+        }
+      ],
+      "stand_in_retrieval": {"units": [[1065, 1127]], "result": "HIT 1.00"},
+      "resolution_limited_span_count": 0,
+      "notes": "Name-anchored trial (VAYHIA); corpus has zero NCT IDs."
+    },
+    {
+      "id": "Q8",
+      "query": "What is zasocitinib's (TAK-279) target and modality?",
+      "type": "known-item",
+      "construct": "single",
+      "slice": "extracted",
+      "scored": true,
+      "facts": [
+        {
+          "fact_id": "Q8.1",
+          "description": "zasocitinib (TAK-279) · target TYK2 · modality small molecule (oral)",
+          "spans": [
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [250, 254], "verbatim": "TAK-279 <zasocitinib> TYK2 inhibitor (oral) Small molecule", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "main_table"}
+          ]
+        }
+      ],
+      "stand_in_retrieval": {"units": [[202, 301]], "result": "HIT 1.00"},
+      "resolution_limited_span_count": 0,
+      "notes": "Summary indication rows (L26/28/30) DEMOTED under §1 — they carry zasocitinib+indication but no MoA."
+    },
+    {
+      "id": "Q9",
+      "query": "Why did Novartis withdraw its EU application for Pluvicto in pre-taxane mCRPC?",
+      "type": "regulatory",
+      "construct": "single",
+      "slice": "extracted",
+      "scored": true,
+      "facts": [
+        {
+          "fact_id": "Q9.1",
+          "description": "Pluvicto · pre-taxane mCRPC · EU application_withdrawal · reason = CHMP feedback on trial design",
+          "spans": [
+            {"doc_id": "q1-2026-interim-financial-report-en", "line_range": [986, 989], "verbatim": "Pluvicto Metastatic castration-resistant prostate cancer pre-taxane ... Withdrawn ... Withdrew EU type II variation application following CHMP feedback on trial design (not related to product quality, efficacy or safety)", "answer_bearing": "answer-bearing", "resolution": "clean", "resolution_note": "L986 status columns are positionally mashed (Approved/Withdrawn/Approved = US/EU/JP), but the prose EXPLICITLY names EU, isolating the answer; the L990 mHSPC row is a different indication, not a sibling", "role": "awaiting-decisions_table"}
+          ]
+        }
+      ],
+      "stand_in_retrieval": {"units": [[979, 992]], "result": "HIT 1.00"},
+      "resolution_limited_span_count": 0,
+      "notes": "Inverse of Q3: a positional status-mash that would have tripped §5 is defused by explicit prose naming the region."
+    },
+    {
+      "id": "Q10",
+      "query": "What is the status of Takeda's Phase 2 trial of TAK-755 (rADAMTS13) in acute ischemic stroke?",
+      "type": "trial",
+      "construct": "single",
+      "slice": "extracted",
+      "scored": true,
+      "facts": [
+        {
+          "fact_id": "Q10.1",
+          "description": "TAK-755 (rADAMTS13) · acute ischemic stroke · Phase 2 · actively recruiting",
+          "spans": [
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [374, 374], "verbatim": "*2  TAK-755 Ph 2 trial in acute ischemic stroke is actively recruiting.", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "footnote (fully self-contained: asset+indication+phase+status)"},
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [352, 360], "verbatim": "TAK-755 <rADAMTS13> Recombinant ADAMTS13 therapy (injection) ... Acute ischemic stroke - P-II", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "main_table (asset+indication+phase; NOT the recruiting status)"},
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [15, 15], "verbatim": "1.TAK-755 Ph 2 trial in acute ischemic stroke is actively recruiting", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "cover_footnote"},
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [753, 755], "verbatim": "TAK-755 <rADMTS13> Acute ischemic stroke - P-II", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "progress_row"},
+            {"doc_id": "qr2025_q4_Pipeline_table_en", "line_range": [853, 853], "verbatim": "*1  TAK-755 Ph 2 trial in acute ischemic stroke is actively recruiting.", "answer_bearing": "answer-bearing", "resolution": "clean", "role": "progress_footnote"}
+          ]
+        }
+      ],
+      "stand_in_retrieval": {"units": [[302, 389]], "result": "HIT 1.00 — the table row (L352-360) AND its status footnote (L374) BOTH fall in chunk (302,389); the char-chunker's large window absorbs the table<->footnote separation"},
+      "resolution_limited_span_count": 0,
+      "notes": "Name/asset-anchored trial; the recruiting STATUS lives only in footnotes (L374/L15/L853), the table rows carry phase only — OR-of-locations unions them."
+    }
+  ],
+  "rollup": {
+    "queries_total": 10,
+    "queries_scored": 9,
+    "queries_excluded_section7": 1,
+    "by_construct": {"single": 5, "set-of-singles": 1, "comparison": 1, "aggregate": 1, "single_per_region": 1, "excluded": 1},
+    "by_slice": {"extracted": 8, "mixed": 1, "un_extracted_excluded": 1},
+    "resolution_limited_spans_total": 3,
+    "spans_entity_leg_cannot_reach": [
+      {"reason": "un-extraction", "span": "Q5 Vanrafia/atrasentan IgAN approved (q1-2026-interim-financial-report-en, L443-445)", "note": "only approved IgAN asset; chunk leg only"},
+      {"reason": "misclassification", "span": "Q1 plasma reg-events (qr2025_q4_Pipeline_table_en, L555-581 + progress)", "note": "extracted chunk, but emitted as Program stage not RegulatoryEvent; chunk leg only"}
+    ]
+  }
+}
