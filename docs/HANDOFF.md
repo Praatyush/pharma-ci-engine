@@ -5,33 +5,45 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
-## Phase 4A — golden + answer-object/scorer contract FROZEN + committed (2026-06-12)
+## Phase 4A — baseline evaluation harness COMPLETE + validated (2026-06-12)
 
-**AUTHORITATIVE STATUS:** **Phase 4A (Q&A mode, corpus-only) is in setup — the evaluation contract is
-frozen; NO agent code exists yet.** On branch `phase-4-agent` (cut from `main`), the Phase 4 design is
-locked in `docs/AGENT_PLAN.md` (incl. the §5.5 terminal-state amendment, `0e7760c`), and two frozen
-artifacts are now committed:
+**AUTHORITATIVE STATUS:** **Phase 4A (Q&A mode, corpus-only) baseline evaluation harness is COMPLETE
+and VALIDATED; NO agent code exists yet.** On branch `phase-4-agent` (cut from `main`), the design is
+locked in `docs/AGENT_PLAN.md` (incl. the §5.5 amendment `0e7760c`). The measurement was built and
+proven **before** any agent (the Phase-2 measure-before-the-thing discipline). Committed:
 
-- **Phase 4A golden — FROZEN + committed** (`4b50c0c`). `src/evals/golden/agent.golden.json`
-  (`golden_schema_version: "agent-golden-v1"`): **13 questions** (Q1–Q9, P1, P3, I2, I3 — gaps at
-  I1/P2 intentional), terminal-state distribution **9 answered / 2 partially_answered / 2
-  insufficient_evidence**, **21 reference claims**. Human-authored from source per AGENT_PLAN §4.1
-  (contamination rule), then transcribed verbatim; `doc_id`s use the full `document_id` forms; Q2-c1
-  span widened to L236–248. Tracked file (goldens are tracked; corpus / indices / reports stay
-  gitignored).
-- **Answer-object ↔ scorer contract — FROZEN + committed** (this commit). `docs/AGENT_CONTRACT.md`:
-  the frozen interface both the scorer and the future research agent build against so they **cannot
-  drift** — answer-object schema (cite-by-evidence-index), the resolved-answer-object via
-  `resolve_citations`, the four scorer metrics, the insufficient-evidence rule, and sliced
-  within-stratum aggregation. Transcribed from frozen AGENT_PLAN decisions; the answer-object analogue
-  of the frozen golden.
+- **Golden — FROZEN + committed** (`4b50c0c`). `src/evals/golden/agent.golden.json` (`agent-golden-v1`):
+  **13 questions** (Q1–Q9, P1, P3, I2, I3 — gaps at I1/P2 intentional), **9 answered / 2
+  partially_answered / 2 insufficient_evidence**, **21 reference claims**. Human-authored from source per
+  AGENT_PLAN §4.1, then transcribed verbatim; full `document_id` doc_ids; Q2-c1 span L236–248.
+- **Answer-object ↔ scorer contract — FROZEN + committed** (`117b258`). `docs/AGENT_CONTRACT.md`: the
+  frozen interface the scorer + future agent build against so they **cannot drift** (cite-by-evidence-
+  index answer-object, resolved-answer-object via `resolve_citations`, the four metrics, the §4
+  insufficient rule, sliced within-stratum aggregation).
+- **Answer-object schema — committed** (`4bdedb5`). `src/evals/answer_object.py` — Pydantic v2
+  `AnswerObject`/`Claim` + resolved forms (`Span`, 1-based-inclusive `line_range`). The
+  claims-empty-on-insufficient rule is a **scorer** criterion, not a schema validator (so the
+  over-claim case stays representable).
+- **Scorer — committed** (`1f10871`). `src/evals/agent_value_match.py` (deterministic value layer:
+  closed-set canonicalizer for phase / status / count / indication_present + structured comparator for
+  currency-magnitude & sign-preserved percentage-pair; **raises** on unrecognized shapes) +
+  `src/evals/agent_metrics.py` (the four metrics: `terminal_state_correct`, `claim_recall` + wrong-value
+  diagnostic, `claim_precision` [**matched-only**: unlisted claims excluded not penalized],
+  `citation_faithfulness`; reuses `retrieval_scorer.line_containment`). Status atoms collapse
+  filed+submission → one `pending_filing` atom; `approved` kept distinct.
+- **Scorer trust gate — committed** (this commit). `tests/evals/test_agent_scorer_sanity.py`: five
+  known-output sanity agents (null / oracle / citation-failure / hallucination /
+  over-claiming-on-insufficient) × an **independently-derived, hardcoded** expected-score matrix
+  asserted over all 13 questions (**65 cells**). **ORACLE scores 1.0 across every claim-bearing question
+  including prose values** → the value layer round-trips the golden; citation-failure proves
+  recall⟂faithfulness; hallucination proves matched-only precision both ways; over-claim proves §4 (not
+  precision) catches insufficient-question confabulation. Suite **107 passing**.
 
-### Next — baseline evaluation harness (scorer + sanity agents); NO agent code yet
-- Build the Phase 4A **scorer** (the four metrics in AGENT_CONTRACT §3, reusing
-  `retrieval_scorer.line_containment` + `normalize.py`) and **baseline sanity-check agents** (which
-  emit resolved spans directly, bypassing the index→span resolution layer). Evidence-first discipline:
-  the measurement is built before any research-agent code. The planning-loop / PLAN–ASSESS–SYNTHESIZE
-  agent is **not started**.
+### Next — agent implementation (NO agent code yet)
+- Build the research agent against the frozen contract + validated scorer, in steps: **loop skeleton
+  (code-owned PLAN–ASSESS–SYNTHESIZE state machine, unit-testable without API) → `corpus_retrieve`
+  wiring (chunk@10 ∪ fused@10) → real Flash-Lite LLM calls**. `src/agent/` and `src/tools/` remain
+  scaffold-only. The baseline answer/scorer harness now exists to measure that agent from day one.
 
 ---
 

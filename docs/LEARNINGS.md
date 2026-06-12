@@ -1,5 +1,28 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-12 — Phase 4A scorer validated BEFORE any agent code; deterministic value layer fixed the normalize gate
+
+**What:** The Phase 4A answer-level scorer (value-matching layer + four metrics) was built and **proven
+against five known-output sanity agents** (null / oracle / citation-failure / hallucination /
+over-claiming) over an independently-derived, hardcoded expected-score matrix (65 cells) — the **ORACLE
+scoring 1.0 across all claim-bearing questions confirms the scorer round-trips the golden** — **before
+any research-agent code exists** (the Phase-2 measure-before-the-thing discipline; the matrix is
+asserted, not recomputed, so a pass reflects correctness, not a tautology).
+
+**Why it matters / the gate it caught:** a mandatory pre-build gate found `normalize.py`'s fuzzy path
+(0.90 threshold) could not match the golden's **prose values**, with two outright defects: **sign-loss**
+on signed percentages (`+2% / -2%` canonicalized identically to `-2% / +2%`, so an opposite value would
+false-match) and **`m` not recognized** as a million scale token. Resolved by a **deterministic** value
+layer — a closed-set canonicalizer (phase / status / count / indication_present) + a structured numeric
+comparator (currency-magnitude, sign-preserved percentage-pair) that **raises** on any unrecognized
+shape — with **zero golden edits** and **no fuzzy threshold / no LLM** (the refuse-uncalibrable-knobs
+discipline). Status atoms collapse filed+submission → one `pending_filing` (same regulatory state, two
+source vocabularies); `approved` kept distinct.
+
+**Rule:** build the measurement (golden + scorer) and prove it with known-output fixtures BEFORE the
+thing it measures; when an existing matcher can't handle the values, **gate-and-report** rather than
+silently lowering a threshold.
+
 ## 2026-06-12 — AGENT_CONTRACT.md freezes the answer-object ↔ scorer interface
 
 `docs/AGENT_CONTRACT.md` was written to **freeze the Phase 4 answer-object interface** so the scorer and the future research agent build against **one spec and cannot drift** — transcribed from frozen `docs/AGENT_PLAN.md` decisions; the answer-object analogue of the frozen `src/evals/golden/agent.golden.json`.
