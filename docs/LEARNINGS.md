@@ -1,5 +1,9 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-12 — AGENT_CONTRACT.md freezes the answer-object ↔ scorer interface
+
+`docs/AGENT_CONTRACT.md` was written to **freeze the Phase 4 answer-object interface** so the scorer and the future research agent build against **one spec and cannot drift** — transcribed from frozen `docs/AGENT_PLAN.md` decisions; the answer-object analogue of the frozen `src/evals/golden/agent.golden.json`.
+
 ## 2026-06-11 — Span-keyed fusion adopted; parameter-free fusion CANNOT preserve unique reach
 
 **What:** Cross-leg fusion is now `rag.fusion.rrf_fuse_by_span` — RRF keyed on the span

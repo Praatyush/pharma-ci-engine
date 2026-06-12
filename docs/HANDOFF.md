@@ -5,6 +5,36 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 4A — golden + answer-object/scorer contract FROZEN + committed (2026-06-12)
+
+**AUTHORITATIVE STATUS:** **Phase 4A (Q&A mode, corpus-only) is in setup — the evaluation contract is
+frozen; NO agent code exists yet.** On branch `phase-4-agent` (cut from `main`), the Phase 4 design is
+locked in `docs/AGENT_PLAN.md` (incl. the §5.5 terminal-state amendment, `0e7760c`), and two frozen
+artifacts are now committed:
+
+- **Phase 4A golden — FROZEN + committed** (`4b50c0c`). `src/evals/golden/agent.golden.json`
+  (`golden_schema_version: "agent-golden-v1"`): **13 questions** (Q1–Q9, P1, P3, I2, I3 — gaps at
+  I1/P2 intentional), terminal-state distribution **9 answered / 2 partially_answered / 2
+  insufficient_evidence**, **21 reference claims**. Human-authored from source per AGENT_PLAN §4.1
+  (contamination rule), then transcribed verbatim; `doc_id`s use the full `document_id` forms; Q2-c1
+  span widened to L236–248. Tracked file (goldens are tracked; corpus / indices / reports stay
+  gitignored).
+- **Answer-object ↔ scorer contract — FROZEN + committed** (this commit). `docs/AGENT_CONTRACT.md`:
+  the frozen interface both the scorer and the future research agent build against so they **cannot
+  drift** — answer-object schema (cite-by-evidence-index), the resolved-answer-object via
+  `resolve_citations`, the four scorer metrics, the insufficient-evidence rule, and sliced
+  within-stratum aggregation. Transcribed from frozen AGENT_PLAN decisions; the answer-object analogue
+  of the frozen golden.
+
+### Next — baseline evaluation harness (scorer + sanity agents); NO agent code yet
+- Build the Phase 4A **scorer** (the four metrics in AGENT_CONTRACT §3, reusing
+  `retrieval_scorer.line_containment` + `normalize.py`) and **baseline sanity-check agents** (which
+  emit resolved spans directly, bypassing the index→span resolution layer). Evidence-first discipline:
+  the measurement is built before any research-agent code. The planning-loop / PLAN–ASSESS–SYNTHESIZE
+  agent is **not started**.
+
+---
+
 ## Phase 3 — MERGED to main (2026-06-12)
 
 **AUTHORITATIVE STATUS:** **Phase 3 COMPLETE and merged to `main`; Phase 4 not started.** Branch
