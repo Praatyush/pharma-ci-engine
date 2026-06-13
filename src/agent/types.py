@@ -18,6 +18,8 @@ from typing import Literal, Protocol
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.evals.answer_object import AnswerObject, Claim
+from src.tools.clinicaltrials import TrialRecord
+from src.tools.fda import FdaApprovalRecord
 
 TerminalState = Literal["answered", "partially_answered", "insufficient_evidence"]
 
@@ -39,6 +41,8 @@ class AssessVerdict(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     kind: Literal["sufficient", "gap", "exhausted"]
+    # gap_kind selects the source for a gap (corpus re-retrieval vs. a live tool); "corpus" is today's behavior.
+    gap_kind: Literal["corpus", "trial_status", "regulatory_status"] = "corpus"
     missing_slots: list[str] = Field(default_factory=list)          # gap: named missing slots
     follow_up_sub_queries: list[str] = Field(default_factory=list)  # gap: queries for the next iteration
     gaps: list[str] = Field(default_factory=list)                   # exhausted: named residual gaps
@@ -59,7 +63,7 @@ class SynthesizeOutput(BaseModel):
 class EvidenceItem:
     text: str
     doc_id: str
-    line_range: tuple[int, int]
+    line_range: tuple[int, int] | None  # None for tool/record evidence (record-identity provenance, no source lines)
 
 
 # --------------------------------------------------------------------------- #
@@ -75,6 +79,14 @@ class RetrieverSeam(Protocol):
     # One call per iteration; the real impl (Batch 5) fans out to corpus_retrieve per sub-query
     # and unions by span. corpus_retrieve costs zero LLM requests (§5.1), so fan-out is free.
     def retrieve(self, sub_queries: list[str]) -> list[EvidenceItem]: ...
+
+
+class ToolSeam(Protocol):
+    # The two live-tool clients (Phase 4C), injected behind a seam for code-owned, network-free-
+    # testable dispatch — mirroring LLMSeam / RetrieverSeam. DECLARED here only this step; NOT wired
+    # into run_agent and no implementation added yet (that is step 2).
+    def clinicaltrials_lookup(self, query: str) -> list[TrialRecord]: ...
+    def fda_lookup(self, query: str) -> list[FdaApprovalRecord]: ...
 
 
 # --------------------------------------------------------------------------- #
