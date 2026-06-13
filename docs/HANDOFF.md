@@ -5,6 +5,41 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 4A — agent loop + real corpus_retrieve + resolution wired; plumbing COMPLETE (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **Phase 4A agent plumbing is COMPLETE and tested WITHOUT quota; the
+end-to-end contract is proven with stubbed reasoning. NO Gemini calls yet — the three LLM seams are
+still stubbed.** On branch `phase-4-agent`, the research-agent control loop, the code-owned
+terminal-state machine, the real `corpus_retrieve` tool, and the evidence-index→span resolution layer
+are built and unit-tested (suite **135**). Committed:
+
+- **Agent loop + state machine (Batch 4).** `src/agent/types.py` (PLAN/ASSESS/SYNTHESIZE output
+  schemas, `EvidenceItem`, the `LLMSeam`/`RetrieverSeam` Protocols, the `Trajectory` record) +
+  `src/agent/loop.py` (`run_agent`: PLAN once → [retrieve → ASSESS]* → SYNTHESIZE/refuse; hard
+  max-iterations cap §5.6; the §5.5 terminal-state machine — terminal state assigned by CODE, never
+  model-declared; §5.8 synthesis validation + one-retry degrade; loud-on-malformed verdict check). LLM
+  + retriever are injected behind the seams (DI stubs in tests).
+- **Real corpus_retrieve + resolution (Batch 5).** `src/agent/retrieval.py`: `corpus_retrieve(query)`
+  = **chunk@10 ∪ fused@10**, span-deduped, **≤20 spans**, `k=10` fixed / non-agent-controllable (§5.3),
+  **reusing the committed Phase 3 retriever** (`chunk_leg`, `entity_leg`, `rrf_fuse_by_span`) — no
+  retrieval reimplemented; `CorpusRetriever` is the `RetrieverSeam` (fan-out per sub-query, union by
+  span). `src/agent/resolve.py`: `resolve_citations` maps cited evidence indices → `(doc_id,
+  line_range)` spans (§5.7). The loop now accumulates a **span-deduped numbered evidence table**.
+- **Tested without quota.** `tests/agent/test_loop.py` (20) + `tests/agent/test_retrieval.py` (8):
+  every §5.5 branch, the §5.6 cap, §5.8 degrade, the well-formedness raise, cross-iteration dedup, the
+  union/dedup/chunk-text logic (mock + a **real-corpus smoke test** against the live FAISS indexes,
+  134 chunk / 307 entity units), resolution, and the **end-to-end** stubbed-LLM loop → resolution →
+  `ResolvedAnswerObject` → **Batch-2 scorer = 1.0** on golden Q1 (contract holds end-to-end).
+  `fastembed` is local — no Gemini quota spent.
+
+### Next — Batch 6: fill the three LLM seams with real Gemini calls
+- Implement PLAN / ASSESS / SYNTHESIZE behind the `LLMSeam` (prompts + Gemini structured-output calls;
+  model configurable, Flash-Lite per §5.1), then run the full agent over the 13-question golden and
+  score with the validated Batch-2 scorer (sliced per AGENT_CONTRACT §5). **This is the first Phase-4A
+  batch that spends quota.**
+
+---
+
 ## Phase 4A — baseline evaluation harness COMPLETE + validated (2026-06-12)
 
 **AUTHORITATIVE STATUS:** **Phase 4A (Q&A mode, corpus-only) baseline evaluation harness is COMPLETE
