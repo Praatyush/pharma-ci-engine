@@ -1,5 +1,69 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-13 — Batch 6b: the granularity nudge worked at the agent level; it RELOCATED the recall bottleneck into the scorer
+
+**What:** A single targeted SYNTHESIZE-prompt nudge (steer the model to phrase each `attribute` with the
+qualifying context the fact carries — indication / period / region / scope) was applied and the full
+13-question golden re-run with real Gemini (label `step2`). The nudge **worked at the agent level**:
+every step2 claim now carries context (`"net sales for Q1 2026"`, `"approval status in IgA
+nephropathy"`, `"development stage for AATD … in the US"`). It is **NOT overfit** — the *same general
+template* produced both a matching attribute (Q1) and a non-matching one (Q7 `"net sales for Q1 2026"`
+vs golden `"Q1 2026 net sales"`); alignment is surface word-order, not golden-memorization.
+Answered-stratum recall moved **0.00 → 0.11**: **Q1 became a perfect 1.0/1.0/1.0** — the first
+real-Gemini question to score across all three claim metrics (recall + precision + faithfulness).
+
+**Why it matters — the remaining recall-zeros decompose into FOUR distinct causes that must NOT be
+lumped** (measured with the real `normalize.similarity`, 0.90 match threshold, and `value_match`):
+
+- **(A) SCORER exposed-limitation.** Correct answer, value matches, but attribute similarity **~0.895 <
+  the 0.90 difflib threshold → rejected** (Q7: `"net sales for Q1 2026"` vs golden `"Q1 2026 net
+  sales"`, reordered-identical, scored 0). **The proven claim is narrow:** real agent output exposed a
+  scorer-design limitation **invisible to oracle validation** — the Batch-3 oracle tested the *exact*
+  golden attribute strings, so the threshold's rejection of correct **paraphrases** was never seen.
+  **The CORRECT FIX is NOT yet determined** — candidates include the threshold, attribute
+  representation, incomplete normalization, an ontology, or golden variability. **Do not prejudge.**
+- **(B) SCORER value-parser limitation.** Space-separated thousands (`"USD 1 516 million"`) do not parse
+  (Q9), so even a matched attribute would fail the value comparison.
+- **(C) GENUINE AGENT ERROR.** Comparison questions answered at **company** granularity (`"Takeda"`)
+  where the golden blesses **drug** granularity (`"mezagitamab"`); Q6 also **drops Jakavi** (Q5, Q6).
+  This is the agent **actually wrong** — NOT a scorer issue, and **a scorer change must NOT paper over
+  it.**
+- **(D) GOLDEN idiosyncratic attribute vocabulary.** `"lifecycle register"` (Q3), `"China filing
+  stage"` (Q4). Chasing these by tuning the agent would **overfit**; they may indicate golden-authoring
+  variability.
+
+**Key insight:** this is the **same CLASS** as the Batch-2 `normalize` gate and the Batch-6a
+citation-direction flip — **a scorer assumption that only broke under real agent output.** But whether
+the FIX is the same (canonicalization) is an **OPEN design question**: attributes are **compositional**
+(core × indication × period × region), unlike values' **finite closed set**, so the Batch-2
+closed-set-canonicalizer may **not transfer**.
+
+**Rule:** the agent's **true answer quality is materially higher than recall = 0.11** — (A) and (B) are
+**measurement-limited**, only (C) is genuine agent error. Before any scorer change, **PARTITION the
+recall-zeros** into scorer-should-have-matched vs genuine-agent-error vs golden-phrasing; **no threshold
+tweak without that partition.**
+
+## 2026-06-13 — Batch 6b: refusal honesty is architecturally unreachable via the ASSESS nudge alone
+
+**What:** A general ASSESS subject-grounding nudge (do not return `sufficient` when the question's
+specific subject/fact is absent from the evidence) was applied alongside Entry above. It **fired** —
+ASSESS returned `exhausted` on I2 — but **resolved none of the four hard questions** (I2, I3, P1, P3) to
+their golden terminal state.
+
+**Why:** the loop state machine (`loop.py`) routes **`exhausted` + ≥1 surviving claim →
+`partially_answered`**; **only ZERO surviving claims → `insufficient_evidence`**. So honest refusal
+requires **SYNTHESIZE to ALSO emit no claims** when only off-target/related content sits in the
+evidence. Observed: **I2 → `partially_answered`** (ASSESS refused, but SYNTHESIZE still manufactured 3
+off-target PV claims); **I3 over-asserts** filing status as if answering a *recruitment* question (the
+drug IS in the corpus, so the subject-presence check passes — the absent thing is the *fact*, not the
+subject); **P1/P3** assert over-broad *scope* vs the golden's single blessed claim (not a
+subject-absence case at all).
+
+**Rule:** this is **architectural, NOT a prompt fix** — it needs the **ASSESS-`exhausted` ↔
+SYNTHESIZE-refusal coupling** (or treating off-target synthesis as non-surviving in the state machine).
+It is the agent's **biggest genuine open weakness.** Do **not** keep tuning ASSESS against these four
+questions — that would overfit to four examples.
+
 ## 2026-06-12 — Phase 4A scorer validated BEFORE any agent code; deterministic value layer fixed the normalize gate
 
 **What:** The Phase 4A answer-level scorer (value-matching layer + four metrics) was built and **proven

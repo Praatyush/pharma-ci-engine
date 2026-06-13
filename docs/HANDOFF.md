@@ -5,6 +5,46 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 4A — 6b: full 13-question run (step1 baseline + step2 tuned); first eval numbers (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **Batch-6b step1 (pre-tuning baseline) AND step2 (one tuning iteration) are
+both COMPLETE; the full 13-question agent has run end-to-end against real Gemini and produced the first
+Phase-4A eval numbers.** On branch `phase-4-agent`. `src/agent/gemini_seam.py` is **still untracked /
+uncommitted** (now carries the two step2 nudges). Saved run artifacts live in gitignored
+`data/eval/reports/agent_step1.json` and `agent_step2.json`. **Nothing committed this step.** Quota:
+step2 = **~39 Flash-Lite calls** (all 13 questions at 1 iteration; `2 + iterations` per question).
+
+- **CORRECTION to the 6a entry below.** The 6a entry's "full run NOT yet done / quota ~3 calls" status
+  is **stale** — the full baseline run (`step1`) DID happen (all 13 scored, saved to
+  `agent_step1.json`). This entry supersedes it.
+- **Two prompt nudges applied for step2** (both general, neither golden-memorizing): a SYNTHESIZE
+  granularity nudge (carry indication/period/region/scope into the `attribute`) and an ASSESS
+  subject-grounding honesty nudge. Scorer / golden / `AGENT_CONTRACT` / `retrieval.py` / `resolve.py`
+  **untouched**.
+- **First real eval numbers (step2, sliced per `AGENT_CONTRACT` §5).** Answered stratum (n=9):
+  **terminal_ok 1.00, recall 0.11** (up from 0.00), precision **1.00 (/1)**, faithfulness **1.00 (/1)**.
+  **Q1 is a perfect 1.0/1.0/1.0** — the first real-Gemini question scoring across all three claim
+  metrics. partially_answered (n=2) and insufficient_evidence (n=2) strata: terminal_ok **0.00**
+  (unchanged); insufficient_pass **0.00**. **The recall = 0.11 is measurement-limited — the agent's
+  true answer quality is materially higher** (see `LEARNINGS.md` 2026-06-13 entry 1: causes A/B are
+  scorer/value-parser limits, only C is genuine agent error).
+- **TWO open issues, NEITHER resolved (and not to be papered over):**
+  1. **Attribute matching** — real agent output exposed a **scorer-design limitation** (correct,
+     value-matching paraphrases scored ~0.895 < the 0.90 difflib threshold; e.g. Q7 `"net sales for Q1
+     2026"` vs golden `"Q1 2026 net sales"`). **The correct fix is an OPEN design question** — NOT
+     necessarily Batch-2-style closed-set canonicalization, because attributes are compositional, not a
+     finite closed set.
+  2. **Refusal honesty** — `insufficient_evidence` is **architecturally unreachable via the ASSESS
+     nudge alone** (the state machine routes `exhausted` + surviving claims → `partially_answered`);
+     needs the ASSESS-`exhausted` ↔ SYNTHESIZE-refusal coupling. The agent's biggest genuine weakness.
+
+### Next — focused design discussion on attribute matching (NOT a prompt tweak, NOT a threshold tweak)
+- **First PARTITION the recall-zeros** into (i) scorer-should-have-matched, (ii) genuine-agent-error,
+  (iii) golden-phrasing — then decide **whether/how** to change the scorer. **No threshold tweak without
+  that partition.** Refusal honesty (issue 2) is a separate, architectural workstream.
+
+---
+
 ## Phase 4A — 6a: LLM seams live on Q1; citation-faithfulness direction corrected (2026-06-13)
 
 **AUTHORITATIVE STATUS:** **The three LLM seams (PLAN/ASSESS/SYNTHESIZE) make real Gemini calls and the
