@@ -1,5 +1,28 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-13 — Citation faithfulness on dense tables is a retrieval-grain limit, not a synthesis-prompt one (step4)
+
+**What:** A SYNTHESIZE "cite precisely" nudge (cite only indices whose text states the claim's value;
+omit topically-related ones) was tried (step4) to fix the Q7/Q9 citation-precision weakness. It
+**FAILED its target and was reverted.** On the dense financial-table corpus the agent did not drop the
+stray chunk — it **re-selected to a different WRONG chunk**, dropping the one correct chunk it had:
+Q7 Kesimpta `(525,579)✓` → replaced by `(3978,4163)✗`; Q9 Kisqali `(580,636)✓` → replaced by
+`(291,307)✗`. Answered-stratum faithfulness FELL (0.77→0.72, and 0.77→0.67 on the original matched set).
+
+**Why:** the model cites by **evidence INDEX over chunk TEXT it cannot ground to specific source lines**
+(§5.7 — by design it never sees doc_id/line ranges). Among **near-duplicate financial-table fragments**
+(many rows with similar figures) it genuinely cannot identify which retrieved chunk states a given number.
+A prompt cannot supply that grounding. **Citation faithfulness on dense tabular data is a
+RETRIEVAL-GRAIN limitation** (needs finer-grained / line-level evidence units), **not a synthesis-prompt
+one.**
+
+**Also (a second, general lesson):** the citation-only instruction **bled into claim content** — claim
+wording changed on Q3/Q4/Q5/Q6/P1 (recall moved 0.56→0.59 via an incidental Q3 reword that happened to
+subset-match the golden). **A prompt edit is NOT cleanly isolated to its target behavior** — changing one
+instruction perturbs the whole generation, so a citation nudge must be measured for content drift
+(recall), not just its intended axis. **Rule:** prefer architectural/retrieval fixes over prompt nudges
+for grounding problems, and always check the off-target metrics after any prompt change.
+
 ## 2026-06-13 — Token-set leniency CANNOT live in the shared matcher (the trust gate caught it on a path we weren't looking at)
 
 **What:** Crediting a correct attribute paraphrase ("net sales for Q1 2026" ≈ "Q1 2026 net sales")

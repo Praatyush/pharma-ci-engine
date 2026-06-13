@@ -5,6 +5,40 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 4A — COMPLETE: final measured result on step3; seam committed (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **Phase 4A is COMPLETE.** The research agent (PLAN/ASSESS/SYNTHESIZE Gemini
+seam) runs end-to-end over the 13-question golden and is scored by the committed value-matching scorer.
+`src/agent/gemini_seam.py` is now **committed** at its final, endorsed prompts (the granularity nudge in,
+the failed citation-precision nudge reverted). On branch `phase-4-agent`.
+
+- **Final measured result (step3, fully reproducible at temperature=0 — byte-identical claims across
+  re-runs):** answered stratum (n=9) **terminal_ok 1.00, recall 0.56, precision 0.70, faithfulness
+  0.77**; partially_answered (n=2) and insufficient_evidence (n=2) **terminal_ok 0.00** (the
+  refusal-honesty architectural issue, below). Runs are gitignored scratch
+  (`data/eval/reports/agent_step{1..4}.json`).
+- **The measurement arc:** answered-stratum recall **0.00** (baseline) → **0.11** (SYNTHESIZE
+  granularity nudge) → **0.56** (after the four committed scorer fixes that credit correct paraphrases
+  without papering over agent errors). Each step was measured before the next; no end-to-end guessing.
+- **Remaining gaps — cleanly decomposed (all characterized, none blocking):**
+  - **Q3/Q4 — golden-phrasing / synonym** ("lifecycle register"; "China filing stage" vs "approval
+    status in China"). Characterized; chasing them by tuning the agent would overfit to golden strings.
+  - **Q5/Q6/P1 — genuine agent subject-granularity error** (company-level subject vs drug; drug
+    unnamed). A real agent weakness, correctly left unmatched by the scorer.
+  - **Q7/Q9 — citation precision** — a **retrieval/chunk-grain limitation on dense financial tables,
+    NOT prompt-fixable** (the step4 citation-precision nudge was tried and REVERTED — it made chunk
+    selection worse and bled into claim content; see `LEARNINGS.md`).
+  - **Refusal honesty (P1/P3/I2/I3)** — `insufficient_evidence` is **architecturally unreachable via the
+    ASSESS nudge alone** (the state machine routes `exhausted` + surviving claims → `partially_answered`).
+    Needs the ASSESS-`exhausted` ↔ SYNTHESIZE-refusal coupling.
+
+### Next — Phase 4A is DONE
+- No further 4A tuning or runs. Future agent-side work, if any, is **subject-granularity** (Q5/Q6/P1) and
+  the two architectural items (**finer-grained/line-level citation evidence** for Q7/Q9; the
+  **refusal coupling** for the partially/insufficient strata) — all characterized, none blocking 4A.
+
+---
+
 ## Phase 4A — 6b: full 13-question run (step1 baseline + step2 tuned); first eval numbers (2026-06-13)
 
 **AUTHORITATIVE STATUS:** **Batch-6b step1 (pre-tuning baseline) AND step2 (one tuning iteration) are
