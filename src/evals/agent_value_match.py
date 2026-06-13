@@ -60,11 +60,16 @@ _SCALE = {
 _CURRENCY_RE = re.compile(r"\b(usd|eur|gbp|jpy|chf)\b|(\$)")
 _SCALE_TOKENS = "k|m|mn|bn|million|millions|billion|thousand|trillion"
 _HAS_MAGNITUDE_RE = re.compile(rf"\d[\d,]*(?:\.\d+)?\s*(?:{_SCALE_TOKENS})\b")
-_AMOUNT_RE = re.compile(rf"(\d[\d,]*(?:\.\d+)?)\s*({_SCALE_TOKENS})?\b")
+# Number may use a comma OR a space as a thousands separator; the space form is SCOPED to digit-triplets
+# (``\s\d{3}`` -> "1 516" is one number), so a bare space between unrelated numbers is NOT merged.
+_AMOUNT_RE = re.compile(rf"(\d[\d,]*(?:\s\d{{3}})*(?:\.\d+)?)\s*({_SCALE_TOKENS})?\b")
 
 _PCT_USD = {"usd", "reported", "dollar", "dollars", "$"}
 _PCT_CC = {"cc", "constant", "constant currency", "constant-currency"}
 _PCT_RE = re.compile(r"([+-]?)\s*(\d+(?:\.\d+)?)\s*%\s*\(?\s*([a-z]+(?:\s+[a-z]+)?)?")
+# Sentinel key for a percentage whose currency component is unresolved (a degenerate/partial percent).
+# It can never equal a real "USD"/"cc" component, so a partial value never matches a proper pair.
+_PARTIAL_PCT = "__partial_pct__"
 
 
 def _looks_currency(low: str) -> bool:
@@ -80,7 +85,7 @@ def _parse_currency(value: str) -> tuple[float, str | None]:
     am = _AMOUNT_RE.search(low)
     if not am:
         raise UnrecognizedValueShape(value)
-    magnitude = float(am.group(1).replace(",", "")) * (_SCALE.get(am.group(2), 1.0) if am.group(2) else 1.0)
+    magnitude = float(am.group(1).replace(",", "").replace(" ", "")) * (_SCALE.get(am.group(2), 1.0) if am.group(2) else 1.0)
     return magnitude, currency
 
 
@@ -101,15 +106,25 @@ def _percent_component(label: str | None) -> str | None:
 
 
 def _parse_percent_pair(value: str) -> frozenset:
-    """``"+2% USD / -2% cc"`` -> ``frozenset({("USD", 2.0), ("cc", -2.0)})`` — SIGN PRESERVED."""
+    """``"+2% USD / -2% cc"`` -> ``frozenset({("USD", 2.0), ("cc", -2.0)})`` — SIGN PRESERVED.
+
+    PRINCIPLED LINE (do not turn the raise into a knob): a percent NUMBER whose currency component
+    cannot be resolved (e.g. the agent's bare, sign-less ``"2%"`` — missing the cc component and/or the
+    sign) is a DEGENERATE/PARTIAL instance of the EXPECTED percentage-pair shape: the agent attempted the
+    right KIND of value and gave it incomplete. It is recorded under the ``_PARTIAL_PCT`` sentinel — which
+    can never equal a real ``USD``/``cc`` component — so ``value_match`` returns False (a WRONG VALUE /
+    recall miss + wrong-value diagnostic), NOT an error. This is an AGENT mistake, not a scorer coverage
+    gap. The raise is RESERVED for its real purpose: a ``"%"`` string with NO parseable percentage at all
+    is not a percentage the scorer can classify, and still raises loud (and a value matching no known
+    shape at all still raises at :func:`classify`).
+    """
     out: dict[str, float] = {}
-    for sign, num, label in _PCT_RE.findall(value.lower()):
+    for i, (sign, num, label) in enumerate(_PCT_RE.findall(value.lower())):
         comp = _percent_component(label)
-        if comp is None:
-            raise UnrecognizedValueShape(f"{value!r}: unrecognized percent component {label!r}")
-        out[comp] = float(num) * (-1.0 if sign == "-" else 1.0)
+        key = comp if comp is not None else f"{_PARTIAL_PCT}{i}"   # degenerate percent -> non-matching key
+        out[key] = float(num) * (-1.0 if sign == "-" else 1.0)
     if not out:
-        raise UnrecognizedValueShape(value)
+        raise UnrecognizedValueShape(value)                        # no percentage at all -> still loud
     return frozenset((k, round(v, 6)) for k, v in out.items())
 
 

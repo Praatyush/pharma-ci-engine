@@ -6,8 +6,10 @@ from ``src/evals/golden/agent.golden.json`` (keys: ``expected_terminal_state``, 
 each reference claim has ``subject`` / ``attribute`` / ``value`` / ``acceptable_spans``).
 
 Value comparisons use the deterministic value layer (``agent_value_match.value_match``, Batch-2
-ratified). ``(subject, attribute)`` comparisons use the existing ``normalize.fuzzy_match`` (the repo's
-established open-text matcher; not a new knob). Citation containment reuses
+ratified). ``(subject, attribute)`` comparisons use ``normalize.token_set_match`` — the established
+open-text matcher augmented with a true token-SET ratio so a reorder-plus-function-word attribute
+paraphrase is credited; the STRICT ``normalize.fuzzy_match`` is reserved for extraction/indication
+matching, where subset-containment must stay a non-match. Citation containment reuses
 ``retrieval_scorer.line_containment`` (the ONE overlap function) — confirmed at build to accept the
 Batch-1 ``Span`` as its unit operand.
 
@@ -80,7 +82,11 @@ def _is_insufficient_expected(golden_q: dict[str, Any]) -> bool:
 
 
 def _subj_attr_match(claim: ResolvedClaim, ref: dict[str, Any]) -> bool:
-    return N.fuzzy_match(claim.subject, ref["subject"]) and N.fuzzy_match(claim.attribute, ref["attribute"])
+    # Token-SET matcher (NOT the strict extraction `fuzzy_match`): credits a reorder-plus-function-word
+    # attribute paraphrase ("net sales for Q1 2026" ~ "Q1 2026 net sales") and an asset-name subset
+    # ("Takeda" ~ "Takeda pipeline"). Genuine subject-granularity errors (company "Takeda" vs drug
+    # "mezagitamab") share no tokens and still fail; the value layer is recall's second gate.
+    return N.token_set_match(claim.subject, ref["subject"]) and N.token_set_match(claim.attribute, ref["attribute"])
 
 
 def _ref_spans(ref: dict[str, Any]) -> list[Span]:

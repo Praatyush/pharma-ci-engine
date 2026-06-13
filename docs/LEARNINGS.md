@@ -1,5 +1,48 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-13 — Token-set leniency CANNOT live in the shared matcher (the trust gate caught it on a path we weren't looking at)
+
+**What:** Crediting a correct attribute paraphrase ("net sales for Q1 2026" ≈ "Q1 2026 net sales")
+needed a true token-set ratio (the legacy "sorted-token ratio" was char-level `difflib` on a
+sorted-token-JOINED string, so one function word dropped a pure reorder to 0.895). The first
+implementation put the token-set ratio into the SHARED `normalize.similarity`.
+
+**Why it matters / the trap:** a benign function word ("for") and a meaning-changing qualifier
+("acquired") are **structurally identical** — both are "one extra token." No global structural measure
+can separate them. Putting token-set into `normalize.similarity` therefore created **false-positive
+extraction TPs**: `matching.py` uses `similarity`/`fuzzy_match` as the indication TP decision, where
+subset-containment must NOT match — and "acquired von Willebrand disease" (a different disease) and a
+verbose-qualifier indication both started matching "von Willebrand disease". **The full test suite caught
+this** (`tests/evals/test_matching.py`), on a code path the change wasn't aiming at — the trust gate /
+suite earned its keep.
+
+**Fix / rule:** paraphrase tolerance is **scoped** to the agent's `(subject, attribute)` matcher
+(`normalize.token_set_similarity` / `token_set_match`, used only by `agent_metrics._subj_attr_match`),
+which has the **value layer as a second gate**. The shared `normalize.similarity` / `fuzzy_match` stays
+STRICT for extraction indication-matching. **Rule: a looseness that helps one matcher can silently break
+another that shares it — scope leniency to where a second gate guards it, and never relax a shared
+matcher without running the FULL suite, not just the targeted cases.**
+
+## 2026-06-13 — Batch 6b: four contained scorer fixes credit correct-answer paraphrases without papering over agent errors
+
+**What:** The recall-zero partition + root-cause diagnostic split the Batch-6b step2 recall-zeros into a
+**SCORER bucket** (correct answers the scorer wrongly rejected) and an **AGENT bucket** (genuine agent
+errors). Four contained, scorer-only fixes resolved the SCORER bucket: (1) true token-set attribute ratio
+(scoped — see entry above); (2) `_ALIASES` coverage for AATD↔expansion (Q2) and NMEs↔expansion (Q8),
+same phrase mechanism as "iga nephropathy"; (3) `_AMOUNT_RE` space thousands-separators scoped to
+digit-triplets (Q9 "1 516"); (4) a degenerate percentage (bare "2%", missing the cc component/sign)
+scores as **wrong-value** via a non-matching sentinel key instead of raising — the
+raise-on-unrecognized-shape design is preserved for genuinely unclassifiable values.
+
+**Why it matters:** on saved step2 data answered-stratum recall went **0.111 → 0.556** (Q1, Q2, Q7, Q8,
+Q9 credited), while the partition's **AGENT bucket deliberately REMAINS unmatched** — Q5/Q6 (company-level
+subject vs drug), P1 (drug unnamed), P3 (incomplete dual-currency value) all correctly stay non-matches.
+The 6-agent trust gate re-passed (oracle 1.0); suite at 135.
+
+**Rule:** before changing a scorer to lift a metric, **partition the misses** into scorer-should-have-
+matched vs genuine-agent-error vs golden-phrasing, and fix ONLY the first — a metric gain that also
+credits the agent's real errors is a regression in disguise, not an improvement.
+
 ## 2026-06-13 — Batch 6b: the granularity nudge worked at the agent level; it RELOCATED the recall bottleneck into the scorer
 
 **What:** A single targeted SYNTHESIZE-prompt nudge (steer the model to phrase each `attribute` with the
