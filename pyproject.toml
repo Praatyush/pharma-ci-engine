@@ -10,10 +10,12 @@ dependencies = [
     "faiss-cpu",     # dense vector index (build/persist/load)
     "rank-bm25",     # keyword/BM25 leg of hybrid retrieval
     "fastembed",     # local, quota-free embeddings (isolated in src/rag/embeddings.py)
+    # Phase 4 tools: live external API clients.
+    "httpx>=0.27",   # HTTP client for ClinicalTrials.gov v2 + openFDA (src/tools/)
 ]
 
 # Phase-scoped deps are added when their phase starts (see ARCHITECTURE.md
-# "Build order"): httpx (Phase 4 tools), pdfplumber (deferred with PDF ingestion).
+# "Build order"): pdfplumber (deferred with PDF ingestion).
 
 [project.optional-dependencies]
 dev = ["pytest"]
