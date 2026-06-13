@@ -30,6 +30,7 @@ class _PlanResponse(BaseModel):
 
 class _AssessResponse(BaseModel):
     kind: Literal["sufficient", "gap", "exhausted"]
+    gap_kind: Literal["corpus", "trial_status", "regulatory_status"] = "corpus"
     missing_slots: list[str] = Field(default_factory=list)
     follow_up_sub_queries: list[str] = Field(default_factory=list)
     gaps: list[str] = Field(default_factory=list)
@@ -61,8 +62,18 @@ _ASSESS_SYS = (
     "EVIDENCE list. Choose `kind`:\n"
     "- 'sufficient': the evidence answers the question — leave missing_slots / follow_up_sub_queries / "
     "gaps empty.\n"
-    "- 'gap': more retrieval would help — set `follow_up_sub_queries` (new queries to retrieve) and "
-    "`missing_slots` (what is missing).\n"
+    "- 'gap': the answer is not yet in the evidence but a lookup would help — set "
+    "`follow_up_sub_queries` and `missing_slots` (what is missing), and set `gap_kind` to name the "
+    "SOURCE to consult:\n"
+    "    * 'corpus' (the default): re-query the document corpus; put the new search queries in "
+    "`follow_up_sub_queries`.\n"
+    "    * 'trial_status': a clinical-trial / recruitment status, answerable by a clinical-trials "
+    "registry lookup.\n"
+    "    * 'regulatory_status': a drug approval / regulatory status, answerable by an FDA approval "
+    "lookup.\n"
+    "  For a 'trial_status' or 'regulatory_status' gap, `follow_up_sub_queries[0]` MUST be the exact "
+    "search identifier to look up — the development code or drug name as it appears in the evidence, "
+    "not a sentence. Default to 'corpus' when unsure.\n"
     "- 'exhausted': more retrieval will NOT help — set `gaps` (what remains unanswerable).\n"
     "SUBJECT CHECK (be honest — do not over-claim sufficiency): choose 'sufficient' ONLY when the "
     "evidence actually addresses the SPECIFIC subject the question names — its named company, drug, "
@@ -118,7 +129,7 @@ class GeminiLLMSeam:
         if resp.kind == "sufficient":
             return AssessVerdict(kind="sufficient")
         if resp.kind == "gap":
-            return AssessVerdict(kind="gap", missing_slots=resp.missing_slots,
+            return AssessVerdict(kind="gap", gap_kind=resp.gap_kind, missing_slots=resp.missing_slots,
                                  follow_up_sub_queries=resp.follow_up_sub_queries)
         return AssessVerdict(kind="exhausted", gaps=resp.gaps)
 

@@ -16,6 +16,7 @@ non-empty ``follow_up_sub_queries`` (load-bearing — drives the next iteration)
 (and no gap-only fields).
 """
 
+from src.agent.tool_seam import LiveToolSeam
 from src.agent.types import (
     AgentRunResult,
     AssessVerdict,
@@ -26,9 +27,12 @@ from src.agent.types import (
     RetrieverSeam,
     SynthesisValidation,
     SynthesizeOutput,
+    ToolSeam,
     Trajectory,
 )
 from src.evals.answer_object import AnswerObject, Claim
+from src.tools.clinicaltrials import TrialRecord
+from src.tools.fda import FdaApprovalRecord
 
 # §5.6 — the cap MECHANISM exists from day one; the VALUE is deferred (set from observed eval
 # behavior). PLACEHOLDER default; always overridable via the ``max_iterations`` parameter.
@@ -109,22 +113,66 @@ def _synthesize_with_repair(
     return valid2, len(invalid2), events              # keep valid, drop invalid
 
 
+def _accumulate(
+    items: list[EvidenceItem],
+    evidence: list[EvidenceItem],
+    seen_spans: set[tuple[str, tuple[int, int] | None]],
+) -> None:
+    """Append new items to the §5.7 numbered evidence table, deduped on (doc_id, line_range) — a span
+    (or a tool record identity) seen twice keeps ONE stable index. Shared by corpus AND tool evidence."""
+    for item in items:
+        key = (item.doc_id, item.line_range)
+        if key not in seen_spans:
+            seen_spans.add(key)
+            evidence.append(item)
+
+
+def _trial_to_evidence(t: TrialRecord) -> EvidenceItem:
+    """A ClinicalTrials.gov record → record-identity EvidenceItem (doc_id ``ctgov:<NCT>``, NO line span)."""
+    text = f"Trial {t.nct_id}: status={t.status}; phase={t.phase}; {t.title}"
+    return EvidenceItem(text=text, doc_id=f"ctgov:{t.nct_id}", line_range=None)
+
+
+def _approval_to_evidence(a: FdaApprovalRecord) -> EvidenceItem:
+    """An openFDA Drugs@FDA record → record-identity EvidenceItem (doc_id ``openfda:<app_no>``, NO span)."""
+    text = (f"FDA application {a.application_number}: {a.brand_name} ({a.generic_name}); "
+            f"submission_status={a.submission_status}")
+    return EvidenceItem(text=text, doc_id=f"openfda:{a.application_number}", line_range=None)
+
+
+def _dispatch_tool(tools: ToolSeam, verdict: AssessVerdict) -> list[EvidenceItem]:
+    """Absence-driven gap-fill (§9.1): CODE maps gap_kind → tool, looks up the identifier
+    (``follow_up_sub_queries[0]`` — guaranteed non-empty by gap well-formedness), and maps each returned
+    record to a record-identity EvidenceItem. The model named the gap-kind; the code picks the tool."""
+    query = verdict.follow_up_sub_queries[0]
+    if verdict.gap_kind == "trial_status":
+        return [_trial_to_evidence(t) for t in tools.clinicaltrials_lookup(query)]
+    return [_approval_to_evidence(a) for a in tools.fda_lookup(query)]   # regulatory_status
+
+
 def run_agent(
     question: str,
     *,
     llm: LLMSeam,
     retriever: RetrieverSeam,
+    tools: ToolSeam | None = None,
     question_id: str = "?",
     max_iterations: int = DEFAULT_MAX_ITERATIONS,
 ) -> AgentRunResult:
-    """Run the agent loop over one question. Pure w.r.t. the injected seams; no real I/O here."""
+    """Run the agent loop over one question. Pure w.r.t. the injected seams; no real I/O here.
+
+    ``tools`` is the §9 live-tool seam; it defaults to the production :class:`LiveToolSeam` and is
+    invoked ONLY on a ``gap`` whose ``gap_kind`` is ``trial_status`` / ``regulatory_status`` — so a
+    corpus-only run (every existing caller, gap_kind defaulting to ``corpus``) never touches it."""
     if max_iterations < 1:
         raise ValueError("max_iterations must be >= 1")
+    if tools is None:
+        tools = LiveToolSeam()
 
     plan = llm.plan(question)
     sub_queries = list(plan.sub_queries)
     evidence: list[EvidenceItem] = []                       # the §5.7 numbered evidence table (span-deduped)
-    seen_spans: set[tuple[str, tuple[int, int]]] = set()
+    seen_spans: set[tuple[str, tuple[int, int] | None]] = set()
     iterations: list[IterationRecord] = []
     final_verdict: AssessVerdict | None = None
     budget_hit = False
@@ -132,18 +180,20 @@ def run_agent(
     # PLAN once → [retrieve → ASSESS]* (single-element plan is just the degenerate case).
     for i in range(max_iterations):
         retrieved = list(retriever.retrieve(list(sub_queries)))
-        for item in retrieved:                             # accumulate deduped on (doc_id, line_range):
-            key = (item.doc_id, item.line_range)           # a span retrieved twice keeps ONE stable index (§5.7)
-            if key not in seen_spans:
-                seen_spans.add(key)
-                evidence.append(item)
+        _accumulate(retrieved, evidence, seen_spans)       # corpus → §5.7 numbered table (deduped)
         verdict = llm.assess(question, list(evidence))
         _check_verdict_wellformed(verdict)            # loud-on-malformed (§5.4 field-set per kind)
         iterations.append(IterationRecord(i, tuple(sub_queries), tuple(retrieved), verdict))
         final_verdict = verdict
         if verdict.kind in ("sufficient", "exhausted"):
             break
-        sub_queries = list(verdict.follow_up_sub_queries)   # gap → next iteration's queries
+        # gap → fill it, then CONTINUE so the next ASSESS re-judges with the new evidence in the table
+        # (§9.1 absence-driven; §5.5 still owns the terminal state). A trial_status/regulatory_status
+        # gap dispatches the named tool and injects record-identity evidence into the SAME table via the
+        # SAME dedup; gap_kind == "corpus" (the default) is unchanged — re-query the corpus next iteration.
+        if verdict.gap_kind in ("trial_status", "regulatory_status"):
+            _accumulate(_dispatch_tool(tools, verdict), evidence, seen_spans)
+        sub_queries = list(verdict.follow_up_sub_queries)   # corpus: re-query terms; tool: identifier reused
     else:
         budget_hit = True                              # cap reached with no terminal verdict (§5.6)
 
