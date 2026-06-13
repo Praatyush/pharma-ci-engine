@@ -26,17 +26,31 @@ It is built in **three gated stages**, each ratified before the next opens:
 
 - **4a — Q&A mode, corpus-only.** A single question in, one cited answer out, over the static
   extracted corpus. **This is the primary subject of this plan.**
-- **4b — report mode.** The *same agent*, driven at a composition level (a multi-question brief
-  rather than one question). The report **contract is deferred to its own gate** — 4b is named here
-  so the 4a design does not accidentally preclude it, not specified here.
-- **4c — live tools.** Adds `clinicaltrials_lookup` and `fda_lookup` (external API clients in
-  `src/tools/`), evaluated against **fixtures** with a **live demo**. Contract **deferred to its own
-  gate**.
+- **4c — live tools (the next stage after 4a — see the ordering lock below).** Adds
+  `clinicaltrials_lookup` and `fda_lookup` (external API clients in `src/tools/`), evaluated against
+  **fixtures** with a **live demo**. Contract **LOCKED in §9** (and the eval-side additions in
+  `AGENT_CONTRACT.md` §6).
+- **4b — report mode (DEFERRED, optional).** The *same agent*, driven at a composition level (a
+  multi-question brief rather than one question). **Deliberately deferred and reordered after 4c**
+  (ordering lock below); it remains an optional later piece, never a blocker. The report **contract
+  is deferred to its own gate** — 4b is named here so the 4a design does not accidentally preclude
+  it, not specified here.
 
 **4c is the designated cut point.** The project is shippable and tells a complete story at the end
-of **any** stage: 4a alone is a defensible corpus-grounded CI agent; 4b adds composition; 4c adds
-currency. We build toward 4c but the project **ends whole at any gate** — no stage leaves a
+of **any** stage: 4a alone is a defensible corpus-grounded CI agent; 4c adds currency; 4b (if built)
+adds composition. We build toward 4c but the project **ends whole at any gate** — no stage leaves a
 half-finished artifact behind.
+
+### Sub-phase ordering — LOCKED: 4a → 4c (4b deferred)
+
+The build order is **4a → 4c**, with **4b deliberately deferred** to an optional later piece. The
+rationale: **4b is the lowest-leverage stage** — it is presentation / composition layered over an
+already-cited answer, and its eval is the **fuzziest** (a multi-question brief has no crisp
+claim-level golden the way 4a and 4c do). **4c is the higher-value stage** — it adds a genuinely new
+capability (**external API integration**, the live clinical/regulatory layer) and a stronger
+**reproducibility story** (the fixture-vs-live eval). Sequencing the higher-value, more-measurable
+stage first maximizes what the project demonstrates at its cut point. **This supersedes the earlier
+"4b gate before 4c" sequencing recorded in §8** — 4b, if it is ever built, follows 4c.
 
 ### Motivation is evidenced, not aspirational
 
@@ -420,9 +434,12 @@ chat before the next opens.
   to contaminate it. This is a gate condition, not a sequencing preference: no `src/agent/` code is
   written until the 4a golden is locked.
 - **4a gate.** Build the 4a agent against the locked golden, **run the eval suite, report the numbers
-  sliced** (construct × terminal state, §4.5), and **ratify in chat before 4b opens.**
-- **4b gate** before **4c.** Each stage's contract (4b report composition; 4c fixture-vs-live tool
-  eval) is specified and ratified at *its* gate, not pre-committed here.
+  sliced** (construct × terminal state, §4.5), and **ratify in chat before the next stage opens.**
+- **4c gate** (the next stage after 4a — per the §1 ordering lock). 4c's contract is **LOCKED in §9
+  of this document** and in `AGENT_CONTRACT.md` §6 (the live fixture-vs-live tool eval); it is built
+  against that contract and ratified at its gate.
+- **4b gate** — **only if 4b is ever built** (deferred, §1). Its report-composition contract is
+  specified and ratified at *its* gate, not pre-committed here.
 
 **Standing disciplines (every gate):**
 
@@ -432,3 +449,60 @@ chat before the next opens.
 - **Append to `docs/ENGINEERING_DECISIONS.md` while the reasoning is fresh.** Candidate entries
   already visible: the **loop-ownership decision** (code-owned vs native function-calling, §5.2);
   and the **fixture-vs-live eval call** when 4c arrives.
+
+---
+
+## 9. Phase 4C Contract — Live Tools (LOCKED)
+
+The 4c design, locked before any client code. Scope: add a live clinical/regulatory layer that
+answers what the static corpus structurally cannot, **without weakening the corpus-grounded
+guarantees 4a established.** The eval-side additions (live golden, fixtures, provenance, route field,
+value atom) are specified in `AGENT_CONTRACT.md` §6; this section owns the *agent / tool* design.
+
+### 9.1 Go-live decision — corpus-first, absence-driven gap-fill only
+
+- **Corpus-first invariant.** The corpus stays the primary source. A live call is made **only to
+  fill a gap the corpus could not** — live lookups are **absence-driven gap-fills**, never the first
+  move and never a parallel/duplicate path over content the corpus already answers.
+- **No staleness / freshness mechanism — explicitly RULED OUT.** The agent does **not** call a live
+  tool to "refresh" a fact the corpus already supplies. Ruled out on two grounds: (1) the public APIs
+  in scope expose **no clean as-of/freshness signal** to compare a corpus fact against, and (2)
+  corpus coverage does not make a staleness re-check worth a request. The live trigger is **absence**
+  (the fact is missing), not **age** (the fact might be old) — a code-checkable condition, not a
+  model judgement about currency.
+- **ASSESS emits a closed-set gap-kind.** The ASSESS verdict's gap signal carries a **gap-kind from a
+  closed set `{corpus, trial_status, regulatory_status}`**. **Code maps kind → tool and owns
+  dispatch** — `trial_status → clinicaltrials_lookup`, `regulatory_status → fda_lookup`, `corpus →`
+  the existing `corpus_retrieve` loop. The model **names the kind of gap; it does not choose or call
+  the tool** — tool selection stays a refused knob *in the model* (§6); the choice is a **code branch
+  over a closed enum**, exactly as terminal-state assignment is. This keeps 4c on the same
+  code-owned-control-flow discipline as §5.2.
+
+### 9.2 Tools — exactly two
+
+- **`clinicaltrials_lookup`** — ClinicalTrials.gov **v2** API (trial / recruitment status, phase).
+- **`fda_lookup`** — **openFDA only** (approvals, regulatory actions). **NOT EMA** — openFDA does not
+  serve EMA data and EMA is out of scope for Phase 4 (this also corrects an earlier "FDA / EMA"
+  reference in `src/tools/CLAUDE.md`).
+
+### 9.3 Failure handling — no new terminal state
+
+- **Tool failure degrades to refusal, not a crash.** A failed live call returns a **typed failed
+  result** → contributes **empty evidence** → the **existing `insufficient_evidence` terminal state**
+  (§2.3 / §5.5). **No new terminal state is introduced.**
+- **Failure is recorded in the trajectory** (§2.5) so the eval can **distinguish a tool-failure cause
+  from a genuine corpus-/record-absence** — both end in `insufficient_evidence`, but the receipts say
+  which.
+- **Caught conditions:** request **timeout**, **HTTP-error** status, and **malformed/unparseable
+  body**. Each maps to the typed failed result.
+- **No retries.** A failed call is not re-issued; the loop relies on the **existing hard iteration
+  cap (§5.6)** and the **§5.5 state machine** (the exhausted / empty-evidence path already routes to
+  `insufficient_evidence`). No new budget mechanism is added.
+- **No cross-tool fallback.** A `trial_status` failure does **not** silently fall back to
+  `fda_lookup` (or vice-versa); the §9.1 mapping is fixed.
+- **openFDA key from env, absence is non-fatal.** The optional openFDA API key is read from the
+  environment (never hardcoded); **its absence is not an error** — openFDA serves keyless at a lower
+  rate limit, and the eval runs keyless regardless (`AGENT_CONTRACT.md` §6.5).
+- **Failure handling is covered by unit tests** (a typed-failed-result on each caught condition),
+  **not by a failure fixture or a golden eval entry** — the live golden scores answered/escalation
+  behavior, while failure modes are a unit-test concern.

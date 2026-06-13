@@ -104,3 +104,71 @@ Metrics are reported **sliced** (per-question, per-construct, per-terminal-state
 Claim metrics are aggregated **only WITHIN terminal-state strata** — there is **NO cross-stratum
 claim-metric average** (averaging claim-recall across claim-bearing `answered`/`partially_answered`
 questions and claim-free `insufficient_evidence` questions would be meaningless).
+
+## 6. Phase 4C live-tool eval-contract additions (LOCKED)
+
+The 4c eval additions, locked alongside `AGENT_PLAN.md` §9. **The frozen `agent.golden.json` is
+unchanged** — every 4c entry lives in a **separate live golden** so the §1–§5 contract above cannot
+drift.
+
+### 6.1 Separate live golden
+
+- **File:** `src/evals/golden/agent.golden.live.json`, **schema version `agent-golden-live-v1`**
+  (distinct from the frozen `agent-golden-v1`). The frozen `agent.golden.json` is **not touched**.
+- **Live slice — single-mode, `live_enabled` expectations only** (the corpus-only side of the story
+  is already supplied by frozen-golden **I3**, so the live golden does not re-litigate corpus-only
+  refusal):
+  - **L1 — oveporexton recruitment status.** An **attribute-gap-with-distractor escalation**: the
+    subject is in the corpus but the *recruitment-status attribute* is absent (and the corpus carries
+    distractor recruitment language for other assets — cf. I3), so ASSESS escalates `trial_status` →
+    `clinicaltrials_lookup`. **Anchored to a specific Completed ClinicalTrials.gov trial.**
+  - **L2 — pitolisant / Wakix approval status.** A **clean entity-absence escalation**: the entity is
+    wholly absent from the corpus (confirmed), so ASSESS escalates `regulatory_status` →
+    `fda_lookup` (openFDA).
+  - **one reused corpus control question** — a single-construct question the corpus answers, carried
+    over to prove the live path does **not** fire when the corpus suffices (the corpus-first
+    invariant, `AGENT_PLAN.md` §9.1, made measurable).
+
+### 6.2 Tool-claim provenance — record-identity source form
+
+A claim sourced from a live tool resolves its citation to a **record identity**, not a line span:
+
+- **`doc_id`** is a **record-identity string**: `ctgov:<NCT id>` for ClinicalTrials.gov,
+  `openfda:<application_no>` for openFDA.
+- **`line_range` is `null`** for tool claims (there are no source lines — the unit is the record).
+- **Citation faithfulness for tool claims is record-level containment** — the cited record identity
+  must match the record that supports the claim. Corpus claims keep the §3.4 line-span containment;
+  tool claims use record identity. The two provenance forms are **disjoint and never compared**.
+
+### 6.3 `expected_route` — blessed-and-tested, not scored
+
+Each live golden entry carries an **`expected_route`** (which tool/route the correct answer comes
+through). It is a **blessed field asserted in the trust gate** (the test proves the code's kind→tool
+dispatch reaches the expected tool), **NOT a scored or reported metric** — it does not enter
+recall / precision / faithfulness or any sliced number. It guards **dispatch correctness** in the
+gate; it is not part of the answer-quality score.
+
+### 6.4 Value-layer canonicalizer — one new atom
+
+- **One new atom** for **ClinicalTrials.gov `overallStatus`** (a controlled vocabulary — e.g.
+  `RECRUITING` / `COMPLETED` / `TERMINATED` / …), added to the value-matching layer so live trial
+  statuses canonicalize like the existing closed-set atoms.
+- **openFDA `"approved"` reuses the EXISTING status atom** — no new atom; regulatory-approval status
+  already canonicalizes through the Phase-4a value layer.
+
+### 6.5 Fixture-vs-live — recorded responses, transport-mocked, keyless eval
+
+- **Fixtures = recorded raw HTTP responses**, **committed under `src/evals/fixtures/`** (a tracked
+  path — confirmed not swept by `.gitignore`, unlike `data/`).
+- **Mocked at the httpx transport layer** via **`MockTransport`**; the **live/eval switch is an
+  injected transport** (eval injects the fixture-backed transport; the live demo injects the real
+  one). The client code is identical on both paths — only the transport differs.
+- **Loud failure on an unexpected request** — a fixture transport that receives a request it has no
+  recorded response for **raises**, so a test can never silently hit a path it did not record.
+- **The eval is keyless and networkless** — it makes **no live calls** and needs **no openFDA key**
+  (the key is **demo-only**, `AGENT_PLAN.md` §9.3).
+- **Authoring discipline (two independent sources must agree).** Golden **values** are blessed from
+  the **authoritative public record** (ClinicalTrials.gov / openFDA / FDA label); **fixtures** are
+  captured **independently** from the API response. **The two must agree at record time** — a golden
+  value and its fixture are cross-checked when authored, so a fixture cannot silently define its own
+  ground truth.

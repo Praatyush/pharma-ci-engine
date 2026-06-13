@@ -5,6 +5,43 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 4C — DESIGN LOCKED: live-tools contract ratified; 4B deferred (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **Phase 4C (live tools) design is LOCKED; NO client code exists yet.** On
+branch `phase-4-agent`. Docs-only: the 4C contract is recorded in `AGENT_PLAN.md` §9 (agent/tool
+design) + `AGENT_CONTRACT.md` §6 (eval additions); `src/tools/` stays scaffold-only and
+`agent.golden.json` is untouched.
+
+- **Sub-phase ordering LOCKED: 4A → 4C; 4B deliberately deferred** (optional later piece). One-line
+  rationale: 4B is **lowest-leverage / fuzziest-eval** (presentation over an already-cited answer),
+  4C is **higher-value** (external-integration + the fixture-vs-live reproducibility story).
+  Supersedes the old `AGENT_PLAN` §8 "4b gate before 4c" sequencing (reconciled in the same docs edit).
+- **4C contract — LOCKED (full detail in `AGENT_PLAN` §9 + `AGENT_CONTRACT` §6; not duplicated here):**
+  - **Go-live:** corpus-first, **absence-driven gap-fill**; **staleness/freshness explicitly RULED
+    OUT** (no clean API as-of signal + corpus coverage). ASSESS emits a **closed-set gap-kind
+    `{corpus, trial_status, regulatory_status}`**; **code owns kind→tool dispatch** (model names the
+    gap, never calls the tool).
+  - **Two tools:** `clinicaltrials_lookup` (CT.gov v2), `fda_lookup` (**openFDA only — NOT EMA**; the
+    `src/tools/CLAUDE.md` EMA drift was corrected in the prior docs edit).
+  - **Failure:** tool failure → **typed failed result → existing `insufficient_evidence`** (NO new
+    terminal state); **trajectory-recorded** (failure-cause vs genuine absence); catch
+    timeout/HTTP-error/malformed-body; **no retries** (relies on the §5.6 cap + §5.5 machine); **no
+    cross-tool fallback**; openFDA key **env-read, absence non-fatal**; failure handling
+    **unit-tested, not fixtured**.
+  - **Live eval:** separate **`agent.golden.live.json` (`agent-golden-live-v1`)**, frozen golden
+    untouched; **L1** (oveporexton recruitment → a Completed CT.gov trial) + **L2** (pitolisant/Wakix
+    approval → openFDA) + **one reused corpus control**; **single-mode `live_enabled`**;
+    **record-identity provenance** (`ctgov:<NCT>` / `openfda:<app_no>`, `line_range: null`,
+    record-level containment); **`expected_route` tested-not-scored**; fixtures committed under
+    **`src/evals/fixtures/`**, **transport-mocked**, **keyless eval**.
+
+### Next — 4C build: dependency gate, then first tool client
+- **4C contract locked, no client code yet.** Next build step is the **dependency gate (add `httpx`
+  to `pyproject.toml`, with approval)** + the **first tool client** in `src/tools/` (mocked-HTTP unit
+  tests, no live network), then the live golden + fixtures scored against the §6 contract.
+
+---
+
 ## Phase 4A — COMPLETE: final measured result on step3; seam committed (2026-06-13)
 
 **AUTHORITATIVE STATUS:** **Phase 4A is COMPLETE.** The research agent (PLAN/ASSESS/SYNTHESIZE Gemini
