@@ -1,12 +1,16 @@
-"""Phase 4A scorer TRUST GATE (Batch 3) — five known-output sanity agents x the Batch-2 metrics.
+"""Phase 4A scorer TRUST GATE (Batch 3) — six known-output sanity agents x the Batch-2 metrics.
 
 Each sanity agent is a single fixture function returning a hardcoded ``ResolvedAnswerObject`` per
 golden question (resolved spans directly — the evidence-index layer is out of baseline scope,
 AGENT_CONTRACT §2). Running them through the four metrics (``src/evals/agent_metrics.py``) must
 reproduce a pre-DERIVED expected-score matrix; an assertion failure means the SCORER is wrong, not the
-expected value. NOT a pluggable runner/registry — just five functions and a matrix of asserts.
+expected value. NOT a pluggable runner/registry — just six functions and a matrix of asserts.
 
-The derived expected matrix (with reasons) is printed by ``__main__``; see the Batch-3 report.
+The sixth agent, ``OVER_BROAD``, was added with the Batch-6a faithfulness-direction correction
+(`acceptable_span ⊆ agent_span`): it cites a document-spanning span and is therefore (by design)
+scored FAITHFUL — making the flip's one false-positive explicit (out of scope for the real agent,
+whose corpus_retrieve emits single-chunk spans). The derived expected matrix (with reasons) is printed
+by ``__main__``; see the Batch-3 / 6a reports.
 """
 
 import json
@@ -90,12 +94,31 @@ def agent_overclaim(gq) -> ResolvedAnswerObject:
     return ResolvedAnswerObject(question_id=qid, terminal_state="answered", claims=[claim])
 
 
+def agent_over_broad(gq) -> ResolvedAnswerObject:
+    """Oracle's correct claims, but each cites a span FAR LARGER than any chunk — a document-spanning
+    (0, 100000) span that swallows the golden span.
+
+    Under the corrected faithfulness direction (`acceptable_span ⊆ agent_span`, §3.4) this is FAITHFUL:
+    the blessed span is contained in the giant span. This is the one degenerate FALSE-POSITIVE of the
+    swapped direction, made EXPLICIT here rather than left silent. It is OUT OF SCOPE for the real agent
+    — `corpus_retrieve` emits only single-chunk-bounded spans, so a document-spanning citation cannot
+    arise (the boundedness assumption the contract relies on)."""
+    o = agent_oracle(gq)
+    claims = [
+        ResolvedClaim(subject=c.subject, attribute=c.attribute, value=c.value,
+                      citations=[Span(doc_id=ref["acceptable_spans"][0]["doc_id"], line_range=(0, 100000))])
+        for c, ref in zip(o.claims, gq["reference_claims"])
+    ]
+    return ResolvedAnswerObject(question_id=o.question_id, terminal_state=o.terminal_state, claims=claims)
+
+
 AGENTS = {
     "NULL": agent_null,
     "ORACLE": agent_oracle,
     "CITATION_FAILURE": agent_citation_failure,
     "HALLUCINATION": agent_hallucination,
     "OVERCLAIM": agent_overclaim,
+    "OVER_BROAD": agent_over_broad,
 }
 
 
@@ -138,6 +161,16 @@ def expected(agent: str, qid: str) -> dict:
             e.update(terminal_ok=False, recall_m=False, precision_m=False, faithful_m=False, insuff_pass=False)
         else:
             e.update(terminal_ok=True, recall=1.0, recall_m=True, precision=1.0, precision_m=True, faithful=1.0, faithful_m=True)
+    elif agent == "OVER_BROAD":
+        # Same scores as ORACLE: the document-spanning citation CONTAINS the golden span, so under the
+        # corrected direction (acc ⊆ agent) it is FAITHFUL -> precision/faithfulness 1.0. This is the
+        # flip's one false-positive (an over-broad citation passes), explicit and out of scope for the
+        # real agent (corpus_retrieve emits single-chunk spans only).
+        e["terminal_ok"] = True
+        if insuff:
+            e.update(recall_m=False, precision_m=False, faithful_m=False, insuff_pass=True)
+        else:
+            e.update(recall=1.0, recall_m=True, precision=1.0, precision_m=True, faithful=1.0, faithful_m=True)
     return e
 
 

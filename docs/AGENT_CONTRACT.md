@@ -69,10 +69,24 @@ resolved_claim.citations = [ { "doc_id": string, "line_range": [start_int, end_i
    is governed by faithfulness, not by the reference set).
 
 4. **`citation_faithfulness`** — **per-citation, binary containment.** An agent citation (resolved to
-   a span) is **faithful iff** `agent_span ⊆ acceptable_span` for **at least one** of the golden
-   claim's `acceptable_spans` (**OR semantics** across the list). Reuses
-   `retrieval_scorer.line_containment`. **No threshold, no fractional credit.** Uncited claims are
-   **absent from the faithfulness denominator** (they fail precision instead).
+   a span) is **faithful iff** `acceptable_span ⊆ agent_span` — the blessed evidence region falls
+   **within** the agent's cited span — for **at least one** of the golden claim's `acceptable_spans`
+   (**OR semantics** across the list). Reuses `retrieval_scorer.line_containment` (operands swapped).
+   **No threshold, no fractional credit.** Uncited claims are **absent from the faithfulness
+   denominator** (they fail precision instead).
+
+   > **Direction correction (revealed by the Batch-6a Q1 run; deliberate, documented change to a frozen
+   > artifact).** The original rule was `agent_span ⊆ acceptable_span`, written when the trust-gate
+   > oracle cited the *exact* golden spans. But the real agent cites at **chunk grain** — `corpus_retrieve`
+   > returns chunk spans (e.g. `(432,486)`) — while the golden blesses **sub-chunk** spans (e.g.
+   > `(443,445)`). Under the old rule a correct chunk citation that *contains* the blessed span was scored
+   > unfaithful (it is broader than the sub-chunk span), demanding a granularity the agent never sees. The
+   > corrected rule is therefore `acceptable_span ⊆ agent_span`. **Boundedness assumption:** this is sound
+   > because `corpus_retrieve` guarantees **single-chunk-bounded** citations (chunk@10 ∪ fused@10, each a
+   > single chunk), so an over-broad (e.g. document-spanning) citation cannot arise from the real agent —
+   > the one degenerate false-positive of the swapped direction (a giant span trivially contains the
+   > blessed span) is out of scope for the real agent and is made explicit by the `OVER-BROAD-CITATION`
+   > sanity agent in the Batch-3 matrix.
 
 ## 4. Insufficient-evidence question rule
 

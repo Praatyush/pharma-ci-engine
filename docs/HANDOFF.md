@@ -5,6 +5,46 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 4A — 6a: LLM seams live on Q1; citation-faithfulness direction corrected (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **The three LLM seams (PLAN/ASSESS/SYNTHESIZE) make real Gemini calls and the
+full pipeline is proven end-to-end on ONE question (Q1); a 6a-revealed scorer/contract correction is
+committed. Full 13-question run NOT yet done (that is 6b).** On branch `phase-4-agent`. Quota spent so
+far: ~3 Flash-Lite calls (the single Q1 run).
+
+- **Real LLM seam (Batch 6a) — built, NOT yet committed.** `src/agent/gemini_seam.py` (`GeminiLLMSeam`)
+  drives PLAN/ASSESS/SYNTHESIZE via `extraction.gemini_client.generate_structured` (same SDK / key /
+  Flash-Lite / structured-output pattern; response-view models mirror `extraction.models`, no
+  `extra="forbid"`). §5.7 honored: the model sees a 0-based NUMBERED evidence list (text only — no
+  doc_ids / line ranges) and cites by INTEGER index. **Held back from commit** pending a 6b SYNTHESIZE
+  prompt tweak.
+- **Q1 run — all four plumbing checks PASS.** (a) structured output parses into the `types.py` schemas;
+  (b) the model cites by integer index (schema-enforced `list[int]`), never doc_ids; (c) indices resolve
+  to real spans via `resolve_citations`; (d) the Batch-2 scorer consumes the `ResolvedAnswerObject`.
+  Two non-plumbing findings surfaced: (1) **citation grain** — fixed below; (2) **attribute phrasing /
+  claim decomposition** — the agent said `"approval status"` vs golden `"approval status in IgA
+  nephropathy"` (fuzzy 0.48 → unmatched → recall 0.0); **deferred to 6b prompt tuning**.
+- **Citation-faithfulness direction CORRECTED (this commit).** The agent cites at **chunk grain**
+  (`corpus_retrieve` returns chunk spans, e.g. `(432,486)`) while the golden blesses **sub-chunk** spans
+  (e.g. `(443,445)`); the original `agent_span ⊆ acceptable_span` demanded a granularity the agent never
+  sees. Reversed to **`acceptable_span ⊆ agent_span`** in `agent_metrics._span_contained` (binary,
+  OR-semantics retained). `AGENT_CONTRACT.md` §3.4 updated with the corrected direction + the
+  **boundedness assumption** (`corpus_retrieve` emits single-chunk-bounded citations, so an over-broad
+  citation cannot arise from the real agent) + 6a provenance — a deliberate, documented change to a
+  frozen artifact. A sixth sanity agent **`OVER_BROAD`** makes the flip's one false-positive (a
+  document-spanning citation is faithful) explicit and out-of-scope-for-the-real-agent.
+- **Trust gate re-verified (6 agents).** ORACLE 1.0 (reflexivity), CITATION_FAILURE still fails (its
+  far-shifted span does not contain the golden span), HALLUCINATION/OVERCLAIM unchanged, OVER_BROAD
+  faithful-and-documented. Suite **135**. (The Q1 chunk citation `(432,486) ⊇ (443,445)` is now faithful;
+  shown on a matched variant — the captured Q1 claim itself stays unmatched on attribute pending 6b.)
+
+### Next — Batch 6b: full 13-question run + first eval numbers
+- Tune the SYNTHESIZE prompt toward the golden's claim granularity (the attribute-phrasing finding),
+  run the full agent over all 13 golden questions, and score sliced (AGENT_CONTRACT §5) for the first
+  full Phase-4A eval numbers. Commit `gemini_seam.py` with that pass.
+
+---
+
 ## Phase 4A — agent loop + real corpus_retrieve + resolution wired; plumbing COMPLETE (2026-06-13)
 
 **AUTHORITATIVE STATUS:** **Phase 4A agent plumbing is COMPLETE and tested WITHOUT quota; the

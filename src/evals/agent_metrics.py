@@ -103,12 +103,17 @@ def _matched_pool(refs: list[dict[str, Any]]) -> list[Span]:
 
 
 def _span_contained(agent_span: Span, pool: list[Span]) -> bool:
-    """``agent_span`` ⊆ some pool span (binary containment, OR over the pool; reuses line_containment).
+    """Some acceptable span ⊆ the agent's cited span (binary, OR over the pool; reuses line_containment
+    with operands SWAPPED).
 
-    ``line_containment(span, unit)`` is the fraction of the SPAN's lines inside the UNIT; == 1.0 means
-    the agent span is fully contained. No threshold / no fractional credit.
+    The agent cites at CHUNK grain (``corpus_retrieve`` returns chunk spans) while the golden blesses
+    sub-chunk spans, so faithfulness asks whether the blessed evidence region falls WITHIN the agent's
+    cited chunk — ``acceptable_span ⊆ agent_span`` — not the reverse (AGENT_CONTRACT §3.4; direction
+    corrected by the Batch-6a Q1 run, where a chunk citation (432,486) containing the golden span
+    (443,445) was wrongly scored unfaithful). ``line_containment(acc, agent) == 1.0`` ⟺ acc ⊆ agent
+    (fraction of the ACCEPTABLE span's lines inside the AGENT span). No threshold / no fractional credit.
     """
-    return any(line_containment(agent_span.doc_id, agent_span.line_range, acc) == 1.0 for acc in pool)
+    return any(line_containment(acc.doc_id, acc.line_range, agent_span) == 1.0 for acc in pool)
 
 
 # --------------------------------------------------------------------------- #
@@ -163,9 +168,10 @@ def claim_precision(answer: ResolvedAnswerObject, golden_q: dict[str, Any]) -> P
 
 
 def citation_faithfulness(answer: ResolvedAnswerObject, golden_q: dict[str, Any]) -> FaithfulnessResult:
-    """§3.4 (matched-only) — per-citation binary containment (agent_span ⊆ acceptable_span, OR over the
-    matched golden claim's spans). Citations on agent claims that match no reference claim are excluded
-    from the denominator (not assessable against the golden); uncited claims contribute nothing."""
+    """§3.4 (matched-only) — per-citation binary containment (acceptable_span ⊆ agent_span — the blessed
+    region falls within the agent's cited chunk; OR over the matched golden claim's spans). Citations on
+    agent claims that match no reference claim are excluded from the denominator (not assessable against
+    the golden); uncited claims contribute nothing."""
     if _is_insufficient_expected(golden_q):
         return FaithfulnessResult(meaningful=False, n_citations=0, n_faithful=0, faithfulness=None)
     total = 0
