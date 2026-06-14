@@ -5,6 +5,48 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 4C — live-tool slice RUN: regulatory_status (L2) + corpus control (Q2) pass live; trial_status (L1) a documented limitation (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **Phase 4C live-tool dispatch is built, committed, and DEMONSTRATED LIVE on
+the clean entity-absence case; one route (trial_status / L1) is a documented limitation, not a bug.**
+On branch `phase-4-agent`. The full 4C build chain is committed: the two API clients
+(`clinicaltrials_lookup` `fbb3d66`, `fda_lookup` `7a8efe4`), the recorded fixtures (`1ed7221`), the
+types/seam plumbing + `gap_kind` dispatch (`c55aaf2`, `3cc66f0`), the scorer record-identity
+faithfulness + value-layer atoms (`a209ddd`, `50ae2c3`), and the live golden (`d40fdba`); the `httpx`
+dependency gate (`3a6d740`) and the 4C contract docs (`73a0f8d`) preceded them.
+
+- **What works LIVE (real Gemini, temp 0; fixture-backed tools — keyless, no network):**
+  - **L2 — `regulatory_status` escalation, scored 1.0 END-TO-END.** "Is pitolisant approved?" → ASSESS
+    `gap(regulatory_status, ['pitolisant'])` → `fda_lookup('pitolisant')` → openFDA record
+    (`openfda:NDA211150`, record-identity span, `line_range=None`) → cited by SYNTHESIZE →
+    terminal_state / recall / precision / faithfulness / expected_route all 1.0 / match.
+  - **Q2 — corpus control holds.** Answers fazirsiran Phase III from the corpus, calls NO tool, scores
+    1.0 — the corpus-first invariant proven (dispatch is discerning, not trigger-happy).
+  - The 4C live-tool capability is **demonstrated on the clean entity-absence case.**
+- **Known limitation — `trial_status` escalation for attribute-absence-with-present-subject (L1).**
+  "Recruitment status of oveporexton's Phase 3 trial" → ASSESS returns `sufficient`/`corpus` and never
+  escalates (it answers the corpus's regulatory "Filed" stage instead). This is the **4A I3
+  attribute-vs-subject seam** (subject present, requested fact absent) and is **NOT prompt-fixable** —
+  a narrow ATTRIBUTE CHECK was tried and produced a **byte-identical** verdict; **reverted, the
+  committed prompt is unchanged.** Structural fix (ASSESS judging attribute-coverage, not
+  subject-coverage) **deferred, out of 4C scope.** See `LEARNINGS.md` (2026-06-13).
+- **Confirmed fact carried forward (for §9.3):** openFDA returns **HTTP 404 with an `{"error": ...}`
+  body** on a zero-match search (NOT a 200 with empty `results`) — the §9.3 wrapper must map that
+  no-match 404 to empty-evidence → `insufficient_evidence`, distinct from a real transport failure.
+- **Golden unchanged:** `agent.golden.live.json` is left as authored — L1's entry expresses the
+  intended (escalate → answered) behavior; the measured L1 failure lives in `LEARNINGS.md` only, so
+  **L1 passing would be the signal** if the seam is ever fixed.
+
+### Next — committed tests, then §9.3
+- **The committed MockTransport fixture-backed test suite (§6.5)** over the WORKING paths (L2
+  `regulatory_status` + Q2 corpus; the dispatch / record-identity-faithfulness / value-atom chain),
+  keyless and networkless.
+- **Then the §9.3 typed-failed-result wrapper** (tool failure → `insufficient_evidence`,
+  trajectory-recorded; incl. the confirmed openFDA 404-on-no-match mapping above).
+- L1 stays a documented limitation — do **not** keep tuning ASSESS against it.
+
+---
+
 ## Phase 4C — DESIGN LOCKED: live-tools contract ratified; 4B deferred (2026-06-13)
 
 **AUTHORITATIVE STATUS:** **Phase 4C (live tools) design is LOCKED; NO client code exists yet.** On

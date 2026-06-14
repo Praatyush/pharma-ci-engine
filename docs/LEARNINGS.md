@@ -1,5 +1,76 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-13 — 4C live-tool escalation: regulatory_status works end-to-end; trial_status hits the attribute-vs-subject seam
+
+**What:** The 4C live-tool escalation slice (L1/L2 + the Q2 corpus control, `agent.golden.live.json`)
+was run against real Gemini (Flash-Lite, temperature 0) with **fixture-backed** tools (the committed
+`clinicaltrials_tak861.json` / `openfda_pitolisant.json`; keyless, no network — only the LLM calls go
+out). **L2 and Q2 PASS; L1 FAILS to escalate.**
+
+**L2 — clean entity-absence escalation works END-TO-END.** "Is pitolisant (Wakix) approved by the
+FDA?" → ASSESS emitted `gap(gap_kind='regulatory_status', follow_up_sub_queries=['pitolisant'])` →
+code dispatched `fda_lookup('pitolisant')` → the openFDA record entered the evidence table as a
+**record-identity EvidenceItem** (`doc_id='openfda:NDA211150'`, `line_range=None`) → SYNTHESIZE cited
+it → scored **1.0 on terminal_state / recall / precision / faithfulness / expected_route**. This
+validates the full 4C chain LIVE: `gap_kind`→tool dispatch, the record-identity faithfulness
+`None`-branch (`None↔None` by doc_id), and the `AP→approved` value atom. The existing SUBJECT CHECK
+fires correctly here because pitolisant is **genuinely absent** from the corpus (subject not present →
+gap).
+
+**L1 — the attribute-vs-subject sufficiency seam (the limitation).** "What is the current recruitment
+status of Takeda's Phase 3 oveporexton trial?" → ASSESS returned **`sufficient`/`corpus`** and never
+escalated; SYNTHESIZE answered the corpus's regulatory **"Filed"** stage instead of the absent
+recruitment status (recall 0.0, route `corpus`≠`trial_status`). **Root cause:** oveporexton **IS**
+present in the corpus (carrying regulatory stage), so the subject-presence SUBJECT CHECK passes and the
+model judges sufficient — it does **not** distinguish the *requested* attribute (recruitment status,
+ABSENT) from a *present, related* attribute (regulatory stage).
+
+**The one-attempt test (Case 1 → Case 2).** A narrow ATTRIBUTE CHECK was added to `_ASSESS_SYS`
+(recruitment status is DISTINCT from regulatory/development stage; an absent requested-attribute with a
+present related attribute must return `gap` with `gap_kind='trial_status'`) and L1 was re-run. **The
+ASSESS verdict was BYTE-IDENTICAL to the pre-edit run** — at temperature 0 the explicit instruction
+moved the model not at all. The edit was **reverted** (it did not achieve its purpose; the committed
+prompt is unchanged). Q2 held during that test (no over-escalation bleed).
+
+**Why / connection to 4A:** this is the **same architectural seam** as 4A's I3 / refusal-honesty
+finding ("the drug IS in the corpus, so the subject-presence check passes — the absent thing is the
+*fact*, not the subject"). One root cause, two surface symptoms: in 4A it is **refusal-honesty**
+(over-asserting on an absent fact); in 4C it is **failure-to-escalate** (answering a present related
+attribute instead of routing to the tool). It is **NOT prompt-fixable via the ASSESS instruction**
+(tested — byte-identical verdict); a real fix needs ASSESS to judge **attribute-coverage** rather than
+subject-coverage — a structural change **deliberately deferred (out of 4C scope)**. Characterized, not
+chased.
+
+**What this does NOT implicate:** the dispatch machinery, record-identity faithfulness, and value
+atoms are all **sound** (proven by L2's end-to-end pass + the earlier offline validation). L1's failure
+is confined to the model's ASSESS sufficiency judgment never reaching the escalation path.
+
+**Golden representation:** `agent.golden.live.json` is left **unchanged** — L1's entry expresses the
+**intended** behavior (escalate → answered); the measured failure is recorded **here in LEARNINGS
+only**, so the golden stays the aspirational truth layer and **L1 passing would be the signal** if the
+seam is ever fixed.
+
+**Rule:** before adding an ASSESS instruction to force escalation, classify the gap — **subject-absence**
+(the existing SUBJECT CHECK handles it; see L2) vs **attribute-absence with the subject present** (the
+unfixed seam; see L1). The latter is not movable by a prompt nudge at temperature 0 — characterize and
+defer, do not burn iterations on it.
+
+## 2026-06-13 — openFDA ORIG-submission selection is array-order-first, not submission_number-ordered
+
+**What:** `fda._original_submission_status` returns the status of the **first** submission with
+`submission_type=='ORIG'` in **array order**. The committed pitolisant fixture (`openfda_pitolisant.json`,
+NDA211150) carries six submissions with **two** ORIG rows, and array order ≠ submission_number order:
+`(SUPPL,7),(SUPPL,5),(ORIG,2),(SUPPL,3),(SUPPL,6),(ORIG,1)` — so the parser selects **ORIG number 2**
+(first encountered), not ORIG number 1 (the chronological original, which appears later).
+
+**Why it doesn't bite (yet):** every submission on this record is status `AP`, so `submission_status`
+resolves to `"AP"` regardless of which ORIG is chosen — L2 scores correctly. But "first ORIG in array
+order" is NOT "the chronological original (submission_number 1)".
+
+**Rule:** for whoever next touches `fda._original_submission_status` — the ORIG selection is
+array-order-first. If a future record's ORIG rows ever disagree on status, decide selection by
+`submission_number` (or report), don't rely on array order. Known shape, not a current bug.
+
 ## 2026-06-13 — Citation faithfulness on dense tables is a retrieval-grain limit, not a synthesis-prompt one (step4)
 
 **What:** A SYNTHESIZE "cite precisely" nudge (cite only indices whose text states the claim's value;
