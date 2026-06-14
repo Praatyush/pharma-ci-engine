@@ -90,8 +90,13 @@ def _subj_attr_match(claim: ResolvedClaim, ref: dict[str, Any]) -> bool:
 
 
 def _ref_spans(ref: dict[str, Any]) -> list[Span]:
-    return [Span(doc_id=s["doc_id"], line_range=(s["line_range"][0], s["line_range"][1]))
-            for s in ref["acceptable_spans"]]
+    # A present [start, end] → tuple (as today); a null/missing line_range → None (a record-identity
+    # acceptable span, e.g. a tool claim's ctgov:/openfda: record — degrade safely, never index a null).
+    spans: list[Span] = []
+    for s in ref["acceptable_spans"]:
+        lr = s.get("line_range")
+        spans.append(Span(doc_id=s["doc_id"], line_range=(lr[0], lr[1]) if lr is not None else None))
+    return spans
 
 
 def _matched_refs(claim: ResolvedClaim, golden_q: dict[str, Any]) -> list[dict[str, Any]]:
@@ -109,17 +114,26 @@ def _matched_pool(refs: list[dict[str, Any]]) -> list[Span]:
 
 
 def _span_contained(agent_span: Span, pool: list[Span]) -> bool:
-    """Some acceptable span ⊆ the agent's cited span (binary, OR over the pool; reuses line_containment
-    with operands SWAPPED).
+    """Is the agent's cited span faithful against the pool? Matches ONLY same-provenance-form members:
 
-    The agent cites at CHUNK grain (``corpus_retrieve`` returns chunk spans) while the golden blesses
-    sub-chunk spans, so faithfulness asks whether the blessed evidence region falls WITHIN the agent's
-    cited chunk — ``acceptable_span ⊆ agent_span`` — not the reverse (AGENT_CONTRACT §3.4; direction
-    corrected by the Batch-6a Q1 run, where a chunk citation (432,486) containing the golden span
-    (443,445) was wrongly scored unfaithful). ``line_containment(acc, agent) == 1.0`` ⟺ acc ⊆ agent
-    (fraction of the ACCEPTABLE span's lines inside the AGENT span). No threshold / no fractional credit.
+    - **Tool claim** (``agent_span.line_range is None``, a record-identity citation, AGENT_CONTRACT §6.2):
+      faithful iff some pool span ALSO has ``line_range is None`` AND the SAME ``doc_id`` — record-identity
+      equality (e.g. ``ctgov:<NCT>`` ↔ ``ctgov:<NCT>``), no line-span arithmetic. A None agent span never
+      matches a tuple-line_range acceptable span by doc_id coincidence — both sides must be None.
+    - **Corpus claim** (``agent_span.line_range`` is a tuple): unchanged — ``acceptable_span ⊆ agent_span``
+      (the blessed sub-chunk region falls WITHIN the agent's cited chunk; §3.4, direction corrected by the
+      Batch-6a Q1 run). ``line_containment(acc, agent) == 1.0`` ⟺ acc ⊆ agent. Only TUPLE-line_range pool
+      members are considered — a None-line_range acceptable span is skipped (never passed into
+      ``line_containment``, which unpacks the tuple). No threshold / no fractional credit.
+
+    The two provenance forms are disjoint and never compared; ``line_containment`` is only ever called
+    with two tuples.
     """
-    return any(line_containment(acc.doc_id, acc.line_range, agent_span) == 1.0 for acc in pool)
+    if agent_span.line_range is None:   # tool claim → record-identity equality (None ↔ None, same doc_id)
+        return any(acc.line_range is None and acc.doc_id == agent_span.doc_id for acc in pool)
+    # corpus claim → tuple containment; skip any None-line_range pool member (mixed forms never match).
+    return any(acc.line_range is not None and line_containment(acc.doc_id, acc.line_range, agent_span) == 1.0
+               for acc in pool)
 
 
 # --------------------------------------------------------------------------- #

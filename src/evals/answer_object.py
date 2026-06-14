@@ -61,7 +61,9 @@ class Span(_Base):
     """
 
     doc_id: str = Field(..., description="Document id (full document_id form, as used in the goldens).")
-    line_range: tuple[int, int] = Field(..., description="1-based inclusive (start, end).")
+    line_range: tuple[int, int] | None = Field(
+        ..., description="1-based inclusive (start, end); None for a record-identity citation (a "
+                         "tool-sourced record with no line span, e.g. ctgov:<NCT> / openfda:<app_no>).")
 
 
 class ResolvedClaim(_ClaimCore):
