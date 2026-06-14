@@ -102,7 +102,7 @@ def _to_record(result: dict) -> FdaApprovalRecord:
     )
 
 
-def fda_lookup(query: str) -> list[FdaApprovalRecord]:
+def fda_lookup(query: str, transport: httpx.BaseTransport | None = None) -> list[FdaApprovalRecord]:
     """Return the Drugs@FDA applications matching a drug name (brand or generic).
 
     Issues a single GET to the openFDA ``/drug/drugsfda.json`` endpoint, searching
@@ -113,6 +113,11 @@ def fda_lookup(query: str) -> list[FdaApprovalRecord]:
     (absence is fine — keyless). Each application maps to a
     :class:`FdaApprovalRecord`. Parses a successful response only; HTTP errors
     propagate (the typed-failed-result handling is a later step, AGENT_PLAN §9.3).
+
+    ``transport`` is the AGENT_CONTRACT §6.5 injected-transport seam: default ``None``
+    uses httpx's real network transport (every live caller is unchanged); tests / the
+    fixture-backed eval inject a ``MockTransport`` so the same request+parse path runs
+    keyless and networkless.
     """
     url = f"{_base_url()}/drug/drugsfda.json"
     headers = {"User-Agent": _USER_AGENT, "Accept": "application/json"}
@@ -125,7 +130,7 @@ def fda_lookup(query: str) -> list[FdaApprovalRecord]:
     if api_key:
         params["api_key"] = api_key
 
-    with httpx.Client(timeout=_TIMEOUT_SECONDS, headers=headers) as client:
+    with httpx.Client(timeout=_TIMEOUT_SECONDS, headers=headers, transport=transport) as client:
         response = client.get(url, params=params)
         response.raise_for_status()
         body = response.json()

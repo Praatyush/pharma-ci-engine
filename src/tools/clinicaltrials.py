@@ -74,7 +74,7 @@ def _to_record(study: dict) -> TrialRecord:
     )
 
 
-def clinicaltrials_lookup(query: str) -> list[TrialRecord]:
+def clinicaltrials_lookup(query: str, transport: httpx.BaseTransport | None = None) -> list[TrialRecord]:
     """Return the ClinicalTrials.gov studies matching an intervention/drug term.
 
     Issues a single GET to the v2 ``/studies`` endpoint by intervention query
@@ -82,6 +82,11 @@ def clinicaltrials_lookup(query: str) -> list[TrialRecord]:
     pagination, no filtering, no status selection, no summary/grouping. Each study
     maps to a :class:`TrialRecord`. Parses a successful response only; HTTP errors
     propagate (the typed-failed-result handling is a later step, AGENT_PLAN §9.3).
+
+    ``transport`` is the AGENT_CONTRACT §6.5 injected-transport seam: default ``None``
+    uses httpx's real network transport (every live caller is unchanged); tests / the
+    fixture-backed eval inject a ``MockTransport`` so the same request+parse path runs
+    keyless and networkless.
     """
     url = f"{_base_url()}/studies"
     headers = {"User-Agent": _USER_AGENT, "Accept": "application/json"}
@@ -91,7 +96,7 @@ def clinicaltrials_lookup(query: str) -> list[TrialRecord]:
         "format": "json",
     }
 
-    with httpx.Client(timeout=_TIMEOUT_SECONDS, headers=headers) as client:
+    with httpx.Client(timeout=_TIMEOUT_SECONDS, headers=headers, transport=transport) as client:
         response = client.get(url, params=params)
         response.raise_for_status()
         body = response.json()
