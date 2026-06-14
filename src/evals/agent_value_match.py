@@ -8,7 +8,8 @@ prose matcher.**
 
 Two mechanisms:
 
-- **CLOSED-SET CANONICALIZER** — phase / status[``approved``, ``pending_filing``] / count /
+- **CLOSED-SET CANONICALIZER** — phase / status[``approved`` (incl. the FDA code ``AP``; ``TA`` ->
+  ``tentative_approval``), ``pending_filing``] / ``ctgov_status`` (CT.gov v2 overallStatus) / count /
   ``indication_present``: explicit enumerated phrasings -> a canonical atom; two values match
   iff they canonicalize to the same atom.
 - **STRUCTURED NUMERIC COMPARATOR** — currency-magnitude (``m`` -> million, **exact** magnitude;
@@ -142,6 +143,22 @@ _INDICATION_PRESENT = ("listed indication", "is an indication for", "an indicati
 _APPROVED = ("approved", "approval")
 _PENDING_FILING = ("filed", "filing", "submission", "submitted", "submit", "under review")
 
+# CT.gov v2 overallStatus controlled vocabulary -> a 'ctgov_status' trial-status atom. Lowercased and
+# EXACT-match (a whole value): idempotent (raw "COMPLETED" and the golden's canonical "completed" both
+# fold to "completed") and case-insensitive (classify lowercases first). Checked BEFORE the substring
+# atoms so an exact status like "approved_for_marketing" stays a trial status, not the drug-approval
+# atom; no existing golden value equals a CT.gov status string, so nothing re-routes.
+_CTGOV_STATUS = frozenset({
+    "recruiting", "not_yet_recruiting", "active_not_recruiting", "enrolling_by_invitation",
+    "completed", "suspended", "terminated", "withdrawn", "available", "no_longer_available",
+    "temporarily_not_available", "approved_for_marketing", "withheld", "unknown",
+})
+
+# openFDA Drugs@FDA submission_status CODES -> the regulatory-status atom. "AP" folds to the SAME
+# 'approved' key the golden's "approved" canonicalizes to (both sides match); "TA" is a DISTINCT
+# tentative-approval key (right shape, different key -> correctly NOT equal to a full approval).
+_REG_STATUS_CODE = {"ap": "approved", "ta": "tentative_approval"}
+
 _NUMWORD = {"zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
             "seven": 7, "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12}
 _COUNT_UNITS = {"nme", "nmes", "lcm", "lcms", "program", "programs", "asset", "assets",
@@ -175,11 +192,17 @@ def _count_int(low: str) -> int | None:
 
 def _closed_set_atom(low: str):
     """Return ``(shape, key)`` for a closed-set value, or None. Priority is load-bearing:
-    PHASE first (Q3-c3 'Phase III ... submission' is a phase, not pending); indication_present before
-    approved (so 'approved indication for' -> presence, not approval status)."""
+    PHASE first (Q3-c3 'Phase III ... submission' is a phase, not pending); then the EXACT-match CT.gov
+    status and FDA-code atoms (a whole-value status/code wins over a substring atom — e.g.
+    'approved_for_marketing' stays a trial status, not 'approved'); indication_present before approved
+    (so 'approved indication for' -> presence, not approval status)."""
     ph = _phase_number(low)
     if ph is not None:
         return ("phase", ph)
+    if low in _CTGOV_STATUS:                       # exact CT.gov overallStatus -> trial-status atom
+        return ("ctgov_status", low)
+    if low in _REG_STATUS_CODE:                    # FDA code: AP -> approved, TA -> tentative_approval
+        return ("approved", _REG_STATUS_CODE[low])
     if any(s in low for s in _INDICATION_PRESENT):
         return ("indication_present", "indication_present")
     if any(s in low for s in _APPROVED):
