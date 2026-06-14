@@ -5,6 +5,52 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 4C — SUBSTANTIVELY COMPLETE: live-tool escalation built, committed, live-validated; HTTP layer under regression (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **Phase 4C (live tools) is SUBSTANTIVELY COMPLETE — the live-tool escalation
+capability is built, committed, live-validated on the clean entity-absence case, with the working HTTP
+layer under a committed regression suite.** On branch `phase-4-agent`, **local-only — NOT yet merged or
+pushed.** The merge + push to `main` is **deferred to a later deliberate step** (per the original plan;
+the whole phase has been local-only).
+
+- **What was built/committed (the full 4C chain, in order):** the 4C contract docs (`73a0f8d`) + the
+  `httpx` dependency gate (`3a6d740`); the two API clients — CT.gov `clinicaltrials_lookup` (`fbb3d66`)
+  and openFDA `fda_lookup` (`7a8efe4`); the recorded fixtures (`1ed7221`); the types/seam plumbing +
+  `gap_kind` dispatch (`c55aaf2`, `3cc66f0`); the scorer record-identity faithfulness + value-layer
+  atoms (`a209ddd`, `50ae2c3`); the live golden (`d40fdba`); the live-eval findings doc (`9ce150c`);
+  the **§6.5 injected-transport seam** (`b5d1a61`); and the **MockTransport client test suite**
+  (`305d1bf`). **Suite at 144** (135 pre-4C + 9 new client tests).
+- **What works (live-validated, real Gemini temp 0):** **`regulatory_status` escalation END-TO-END**
+  (L2 — "is pitolisant approved?" → `fda_lookup` → `openfda:NDA211150` record-identity citation →
+  scored **1.0**) + the **corpus control** (Q2 answers fazirsiran Phase III from the corpus, calls NO
+  tool, scored 1.0). The live-tool capability is **demonstrated on the clean entity-absence case**; the
+  corpus-first invariant holds (dispatch is discerning, not trigger-happy).
+- **Known limitation (characterized, not a bug):** **`trial_status` escalation for
+  attribute-absence-with-present-subject (L1)** — the **4A I3 attribute-vs-subject seam** (subject
+  present, requested fact absent → ASSESS judges sufficient and never escalates). **Not prompt-fixable**
+  (a narrow ATTRIBUTE CHECK produced a **byte-identical** verdict; reverted, committed prompt
+  unchanged); structural fix **deferred, out of scope**. See `LEARNINGS.md` (2026-06-13).
+- **Coverage / robustness:** the **HTTP client layer is covered by the committed MockTransport suite**
+  (keyless / networkless, §6.5 — request shape + parsed records + the current raise/propagate failure
+  behavior). The **§9.3 failure-handling wrapper is deliberately DEFERRED / out of 4C scope** — the
+  clients raise/propagate by design; the no-match behavior (incl. the confirmed openFDA
+  404-on-no-match) is **characterized, not built**.
+- **Golden:** `agent.golden.live.json` left as authored — L1's entry expresses the **intended**
+  behavior; the measured L1 failure is recorded in `LEARNINGS.md` only, so **L1 passing would be the
+  signal** if the seam is ever fixed.
+
+### Next
+- **(1) Merge `phase-4-agent` → `main` and push** — **deferred, to be done deliberately later**; the
+  whole phase has been **local-only** (local `main` is at the pushed Phase-3 state — `e1e2b72`, in sync
+  with `origin/main`; all 4C work is on `phase-4-agent`, unmerged and unpushed).
+- **(2) Deferred-and-optional future work, NOT 4C scope:** the §9.3 failure wrapper (tool failure →
+  `insufficient_evidence`, incl. the openFDA 404 mapping); **4B report mode**; multi-agent
+  orchestration. Each is its own gated step if/when picked up.
+- **(3) The consolidated project report / resume rewrite** — the originally-deferred capture work, now
+  that the build has authentic depth behind it.
+
+---
+
 ## Phase 4C — live-tool slice RUN: regulatory_status (L2) + corpus control (Q2) pass live; trial_status (L1) a documented limitation (2026-06-13)
 
 **AUTHORITATIVE STATUS:** **Phase 4C live-tool dispatch is built, committed, and DEMONSTRATED LIVE on
@@ -37,12 +83,15 @@ dependency gate (`3a6d740`) and the 4C contract docs (`73a0f8d`) preceded them.
   intended (escalate → answered) behavior; the measured L1 failure lives in `LEARNINGS.md` only, so
   **L1 passing would be the signal** if the seam is ever fixed.
 
-### Next — committed tests, then §9.3
+### Next
 - **The committed MockTransport fixture-backed test suite (§6.5)** over the WORKING paths (L2
   `regulatory_status` + Q2 corpus; the dispatch / record-identity-faithfulness / value-atom chain),
   keyless and networkless.
-- **Then the §9.3 typed-failed-result wrapper** (tool failure → `insufficient_evidence`,
-  trajectory-recorded; incl. the confirmed openFDA 404-on-no-match mapping above).
+- **Deferred (out of 4C scope): the §9.3 typed-failed-result wrapper** (tool failure →
+  `insufficient_evidence`, incl. the confirmed openFDA 404-on-no-match mapping above). The clients
+  **raise/propagate by design**; this is explicitly **NOT built in 4C** — a decided descope, not
+  unfinished work (the no-match behavior is *characterized*, and the 404 fact stays recorded above if
+  §9.3 is ever picked up later).
 - L1 stays a documented limitation — do **not** keep tuning ASSESS against it.
 
 ---
