@@ -1,144 +1,107 @@
-# Evaluating an LLM Extraction Pipeline: A Case Study
+# Knowing Whether It Worked: Building and Evaluating a Pharmaceutical CI Agent
 
-An LLM extraction system can score 41% on a headline metric and still be working correctly.
-This is how I proved that — and turned a mediocre-looking number into a specific, fixable
-diagnosis of where the model actually fails.
+This project produced three headline numbers: **0.41**, **0.00**, and **0.56**.
+
+All three were misleading.
+
+The first hid a specific, localized bug behind a vague bad grade. The second blamed the wrong component entirely. The third only appeared after I fixed the *measurement*, not the system. This case study is about building a pharmaceutical competitive-intelligence agent, and discovering, over and over, that evaluating it was harder than building it, because the number telling me how it was doing kept being the thing I couldn't trust.
 
 ## The problem
 
-Pharmaceutical pipeline tables and earnings reports are where competitive intelligence lives:
-which drug is in which trial, what regulators have approved or rejected, how products are
-selling. The system ingests those reports and produces a structured record of every drug,
-clinical trial, regulatory event, and market metric — each one traceable back to the exact
-source line it came from.
+Pharmaceutical competitive intelligence lives in dense documents: pipeline tables, earnings reports, regulatory filings. The questions are simple to ask and hard to answer. What stage is this drug in, which trials read out, who got approved where. The goal was a system that ingests those reports, builds a structured and fully source-traceable record, and answers questions over it with every claim cited back to a specific line.
 
-Evaluating that is harder than evaluating a chatbot. One molecule shows up under four names
-(a code, a generic, a brand, an alias). The same fact gets extracted many times by design, once
-per chunk of text. Half the fields are open vocabulary — there is no canonical list of
-"indications" or "therapeutic areas." And every fact has to point back to a real line in the
-source, so "it sounds right" isn't good enough. Before you can grade the model, you have to
-build something that knows when two messy facts are the same fact.
+What makes this hard to *evaluate* is the domain. One molecule appears under four names: a development code, a generic, a brand, an alias. The same fact gets extracted many times over, once per chunk. Half the fields are open vocabulary, with no canonical list of "indications." And every claim has to point back to a real source line, so "sounds plausible" fails as a standard. Before you can grade the system, you have to build something that knows when two messy facts are the same fact. That requirement, that correctness be *checkable* rather than vibed, drove every decision that followed.
 
-## The evaluation approach
+## What I built
 
-I hand-labeled a golden set — the correct answers, written from the source documents,
-independent of whatever the model produced. Then a matching harness lines up predictions against
-that golden set: it first merges the duplicate extractions of each fact, then matches what's left
-using exact rules for closed fields (a trial phase is `3` or it isn't) and fuzzy, synonym-aware
-comparison for the open ones (so "IgA nephropathy" and "Immunoglobulin A nephropathy" count as
-the same disease). A separate grounding check asks a different question entirely: does the source
-line the model *cited* actually contain the fact? Finally, the corpus is small and closed, so
-instead of sampling I censused it — labeled every chunk that carries a regulatory event — which
-removes any "is this sample representative?" doubt about the headline number.
+A pipeline that ends in an agent.
+
+**Extraction** chunks each document and runs it through a structured-output LLM call that maps text to a structured schema: drugs, development programs, trials, regulatory events, market metrics, and the provenance tying them to source. The schema keeps distinctions a CI analyst depends on. A molecule is one thing; a dated development fact about it is another; a regulatory approval is a third. Collapsing them loses information someone will later need. Open-vocabulary fields stay free text and are never forced into enums, because the real world isn't a closed vocabulary. And citations are assigned by code, not the model, so a fact cannot claim a source the model merely hallucinated.
+
+**Retrieval** is hybrid: dense vector search for semantic matches, BM25 for exact lexical ones, fused over source spans. Two legs because each catches the other's misses. Embeddings find "kidney disease" → "IgA nephropathy"; lexical search finds an exact drug code or acronym that embeddings blur.
+
+**The agent** sits on top with deliberately **code-owned control flow**. The model makes three narrow decisions: plan sub-questions, assess whether the retrieved evidence is sufficient, synthesize a cited answer. Everything else is owned by code: the loop, the stopping condition, the final terminal state, and which tool to call. The agent cites evidence only by index into a numbered list, never seeing document IDs or line numbers, so a code-side layer resolves those citations and checks independently that they hold.
 
 ```mermaid
 flowchart LR
-    G[Golden labels<br/>hand-written truth] --> M
-    P[Model predictions] --> C[Merge duplicate<br/>extractions]
-    C --> M[Match: exact keys +<br/>fuzzy open fields]
-    P --> Gr[Grounding:<br/>cited line contains fact?]
-    M --> R[Decomposed report<br/>P/R/F1 + failure types]
-    Gr --> R
+    Q[Question] --> PLAN[PLAN<br/>sub-questions]
+    PLAN --> RET[RETRIEVE<br/>corpus]
+    RET --> ASSESS{ASSESS<br/>evidence<br/>sufficient?}
+    ASSESS -->|sufficient| SYN[SYNTHESIZE<br/>cited answer]
+    ASSESS -->|gap: corpus| RET
+    ASSESS -->|gap: trial / regulatory| TOOL[DISPATCH<br/>live API]
+    TOOL --> RET
+    SYN --> TS[/terminal state<br/>assigned by code/]
 ```
 
-## Key design decisions
+This design exists *for the evaluation*. When code owns the control flow and the agent emits a structured trajectory, you can grade what it did at every step, not just whether the final paragraph reads well. An agent that decides its own control flow is far harder to hold accountable, and accountability was the point. (The model throughout is Gemini Flash-Lite, isolated behind a config flag so a stronger model is a re-run, not a rewrite; the agent runs at temperature zero over deterministic retrieval, so the evaluation is reproducible to the byte.)
 
-The judgment is in the matching rules — and most of them were forced by the data, not chosen up
-front.
+That's the system. What made it a serious project was evaluating it four times, each harder than the last.
 
-| Decision | Why | Impact |
-|---|---|---|
-| Drop `period` from the metric matching key | In the data only 15 of 40 period values were clean; the rest were missing or garbled table fragments | Had it stayed a required match field, genuine matches would have failed on a junk value and metric recall would have read ~37% — a number that looks like a model failure but is actually a broken metric. Caught before it lied. |
-| Drop `agency` (FDA/EMA/…) from the regulatory key; score it separately | The model assigned it inconsistently (failed on 3 of 24 cases), and the region already implies it (FDA⇒US) | Stopped one weak field from sinking otherwise-correct matches; agency is still reported, just not gating. |
-| Decompose false positives instead of loosening the rules | Several "wrong" predictions are explainably-not-hallucinations: a fact with a dropped field, a correct disease with extra context, the same fact restated in two chunks | Recall is never silently inflated. Loosening a key to absorb these would hide real model behavior; classifying them keeps the number honest *and* surfaces the behavior. |
-| Keep grounding separate from correctness | A fact can be correct but cite the wrong line, or cite the right line but be wrong | Two independent signals instead of one muddy one — extraction accuracy *and* whether the citations hold up. |
+## The extraction number that lied
 
-## Results
+I hand-labeled a golden set from the source documents, independent of anything the model produced, then built a harness that merges duplicate extractions, matches what's left, and separately checks whether each cited line actually contains the fact cited to it. The corpus is small and closed, so I censused it rather than sampled.
 
-Scores are on *distinct* facts. False positives are split into real errors versus three
-explainable categories, shown as their own columns rather than buried in the precision number.
+Regulatory-event recall came back at **0.41**.
 
-| Entity | Precision | Recall | False positives (clean / explainable) |
-|---|---|---|---|
-| Programs | **0.88** | 0.73 | 9 clean · 1 dropped-field · 2 extra-context · 10 cross-chunk restatement |
-| Trials | 1.00 | 0.83 | 0 |
-| Regulatory events | 0.94 | **0.41** | 1 clean · 3 dropped-field · 1 extra-context |
-| Market metrics | 1.00 | 1.00 | 0 |
+That number is a verdict: the model is bad at regulatory events. It's also a lie. The misses weren't spread evenly. They clustered entirely in one place, the plasma-derived therapies table, where the model had extracted almost no regulatory events despite every row reading "Approved (Feb 2026)." The mechanism is exact: in that table format the model reads "Approved" as a *development stage*, not a *regulatory event*, two different entities, and only emits the first. Everywhere else, approvals extract fine.
 
-Grounding (does the cited line hold the fact?):
+"Recall is 0.41" tells you to distrust the model and stops there. "The model misreads one table's status cells as a stage instead of an event" tells you what to fix and predicts the rest is sound. Extraction is the foundation, so that misread would have propagated silently into every retrieval result and every agent answer downstream. Catching it as a bounded bug rather than a diffuse "the model is unreliable" is the difference between shipping and stalling.
 
-| Token type | Grounded | Read as |
-|---|---|---|
-| Drug, action, value, indication, phase | 97–100% | Precise — these key on locally-unique words |
-| Region, stage | 62% / 53% | Directional only — see caveat below |
+The same pass caught the failure worth fearing most: the model inventing facts the source never stated. A tenth of region labels were fabricated: the model asserted a specific region on rows that named none. It even had an explicit "no region stated" option available, and used it correctly on some rows, but in roughly a tenth of cases it guessed a concrete region instead of abstaining. The grounding check caught it before anyone trusted a regional breakdown built on a guess.
 
-The hard error rate — a fact cited to a line that genuinely doesn't contain it — was about 0.3%
-(1 in 307). But the aggregate numbers hide the more useful story: *where, specifically, the model
-fails.*
+## Measuring what the agent can even see
 
-## What the measurement found
+Before grading the agent's reasoning, I measured retrieval alone, to avoid a trap. When an agent answers badly there are two suspects: it reasoned poorly, or retrieval never surfaced the evidence. Those need opposite fixes, and confusing them sends you rewriting prompts to solve what is actually a recall problem. So I measured whether the fused ranking put the right span in reach, as its own number, before trusting anything downstream of it. A reasoning metric you haven't isolated from retrieval is one that will point you at the wrong bug.
 
-**The regulatory-event recall is 0.41 — and that number, alone, would have been a lie.** It reads
-like "the model is bad at regulatory events." It isn't. The misses weren't spread evenly, so I
-looked at where they clustered, and they clustered in one place: the plasma-derived therapies
-section of the pipeline table. I pulled the predictions for those specific chunks and found the
-model had extracted **zero** regulatory events from them — chunks 12, 15, and 16 returned 0, 0,
-and 1 — even though every row says "Approved (Feb 2026)" or "Filed (Oct 2025)."
+## When the measurement is the broken instrument
 
-The mechanism is concrete: in that table the model reads "Approved" as a *development stage* of
-the drug, not as a *regulatory approval event*. Those are two different facts in the schema, and
-the model only ever emits the first one. So the same approval is captured as a program but
-dropped as a regulatory event — consistently, across both the main table and its progress
-restatements. Everywhere else, the model catches approvals and filings fine (the narcolepsy,
-oncology, and Novartis filings all land).
+This was the sharpest version of the lesson.
 
-That distinction is the whole point of evaluating this way. "Recall is 0.41" tells you to
-distrust the model and stops there. "The model treats one table's status cells as a stage instead
-of an event" tells you exactly what to fix — sharpen the prompt for that table format, or
-post-process status cells into events — and predicts that the rest of the regulatory extraction
-is sound. A localized, mechanistic failure is something you can act on. A vague low number is
-not. The measurement turned a bad grade into a fixable bug.
+I wrote thirteen questions from the source *before the agent existed*, the same anti-contamination rule, because you can't grade a system against answers it helped write. Then I scored terminal state, claim recall, claim precision, and citation faithfulness.
 
-The supporting findings came the same way — by looking, not just scoring:
+First run: **0.00** claim recall.
 
-- **Trials extract reliably** (precision 1.00; the one miss is a Phase III trial mentioned only
-  in a prose sentence, not a table, which is honestly the harder case). Named trials, phases, and
-  whether a trial met its endpoint all come through.
-- **The load-bearing facts are well-grounded.** When the model cites a line for a drug, an
-  action, a value, or an indication, that line really contains it 97–100% of the time. The
-  citations hold where it counts.
-- **The model asserts regions the source never states.** A tenth of region labels were "Global"
-  applied to rows that name no region at all. This is the failure mode worth fearing: a required
-  schema field gave the model no way to abstain, so it fabricated a value to satisfy the
-  constraint rather than leave it blank — inventing data to fill a slot, the classic dangerous
-  LLM behavior — and the grounding layer is what caught it, before anyone trusted a region
-  breakdown built on a guess.
+A zero is suspicious the same way 0.41 was. A system retrieving real evidence and writing fluent cited answers does not get *nothing* right. So before touching the agent, I asked whether the zero was real. Mostly it wasn't. One genuine fix, a synthesis adjustment for answer granularity, moved recall to **0.11** and proved the agent could produce matchable claims at all.
 
-Measuring also separated *real* model weaknesses from artifacts of my own test design. Ten of the
-program false positives were the same fact extracted in two chunks with inconsistent regions —
-which only counts against the model because I deliberately labeled both the main table and its
-restatements. So program precision is **0.88 on distinct facts**, with those ten reported as their
-own category, not silently dragging the number to a misleading 0.78. The decomposition is the
-honest version: it neither hides the duplicates nor lets them masquerade as hallucinations.
+Then recall went from **0.11 to 0.56 without one line of agent code changing.**
+
+The 0.11 was the *scorer* under-crediting correct answers. The agent's claims were right but phrased differently than the golden, and the matching was too strict to see it. Its "token overlap" check was secretly running character-level string distance on a sorted-token string, so a single dropped function word sank a perfect paraphrase. Four targeted fixes credited the correct paraphrases without loosening enough to credit genuine errors. The agent had been more correct than the measurement could see.
+
+This is the extraction lesson, escalated. With 0.41 the *model* looked worse than it was; here the *measurement itself* was the broken instrument, and improving the score meant fixing the ruler. Underneath that is a trap universal to agent work: it is far easier to "improve" a system by quietly loosening its evaluation than by fixing the system, and from the outside the two look identical. So I held the line. The genuine agent errors that surfaced in the same pass, answering at the company level when the question named a specific drug, dropping a named product, stayed failures, because no scorer change should be allowed to make a real error disappear.
+
+The number that mattered was never 0.56. It was the distance between 0.11 and 0.56: between what the agent did and what a naive measurement claimed.
+
+## The failure a retrieval metric would never catch
+
+The last layer gave the agent live tools. When the corpus genuinely can't answer, it escalates, to ClinicalTrials.gov for trial status, to the FDA's openFDA for approvals, and folds the result into the same cited pipeline. Escalation is corpus-first: a live call fires only after the corpus comes up short, so every external call traces to a specific gap.
+
+For a clean case it works end to end. Asked whether a drug *absent from the corpus* is FDA-approved, the agent recognizes the gap, routes to openFDA, retrieves the approval, cites it by application number, and scores perfectly.
+
+Then there's the case that taught me the most.
+
+I asked for the *recruitment status* of a drug that **is** in the corpus, but the corpus holds only its regulatory filing stage, nothing about recruitment. The agent answered confidently, fluently, and wrongly: it reported the filing stage as if it answered the recruitment question, and never escalated to the live trial registry that had the real answer. It judged the corpus sufficient and stopped.
+
+The root cause is precise, and once you see it, obvious. The agent's sufficiency check tested whether the *subject* of the question was in the evidence, and the drug was. It never tested whether the specific *attribute* being asked about was there. Subject present, therefore sufficient. The system couldn't tell "I have evidence about this drug" from "I have evidence about the specific thing being asked about this drug." It was the same architectural seam that had caused a separate honesty failure earlier in the build: one root cause, two symptoms, in two different parts of the system.
+
+So I tried to fix it with a prompt. I told the model explicitly that evidence about a subject is not evidence about every attribute of it, that recruitment status is distinct from regulatory stage, that an absent attribute must trigger escalation. At temperature zero, the model's verdict came back **byte-identical**. The instruction moved it not at all. I reverted the change and recorded the limitation: it isn't prompt-fixable, and the real fix is structural, the assessment step has to reason about *attribute* coverage rather than subject presence, which I scoped out deliberately rather than chase.
+
+This is the project's most important finding, and it's a strength, not a disappointment. It's a failure standard retrieval metrics would never expose, because the right document was perfectly retrievable; the agent could have escalated and gotten the live answer. The failure lives entirely in how the system reasons about what it *doesn't* have. You only catch it with evaluation built to probe attribute-level absence, and most evaluation isn't.
+
+## What I learned
+
+**Measuring an AI system is harder than building it.** The agent was a few weeks of engineering. Knowing what it was actually doing took longer and produced nearly every real insight. Optimizing a score is the wrong instinct; the job is producing a number you've checked won't mislead the person who reads it.
+
+**The first question about a bad metric is not "how do I fix the system." It's "do I trust this number."** The recall arc from 0.00 to 0.56 was mostly the scorer being wrong. Every hour spent tuning the agent would have produced nothing, because the agent wasn't the problem.
+
+**The most informative experiment in the whole project was the one that changed nothing.** A prompt edit that produces a byte-identical output is conclusive proof that a failure is structural, not linguistic. When instruction-writing moves the model zero, you stop writing instructions, and that's a finding, not a dead end.
+
+**A benchmark should encode the intended truth and exist to expose the gap.** I left the failing case in the eval set expressing the *correct* answer, not the one the system gives. The benchmark isn't a record of current behavior; it's the standard behavior is measured against, and the gap between them is the whole point. Weakening it to pass would have hidden the one thing worth knowing.
+
+**A score tells you something is wrong. A diagnosis tells you what to do next.** "0.41" is a verdict; "the model misreads one table's status cells" is a work item. The most useful output of an evaluation is almost never the number. It's the specific, mechanistic thing you can act on.
 
 ## Limitations
 
-These are scope choices, made to get the methodology right before scaling it. Takeda's pipeline
-table is fully censused; the Novartis report is measured over the twelve chunks I extracted, not
-all hundred — so the Novartis regulatory recall is bounded to that slice and stated as such, not
-hidden. One model does the extraction (Gemini Flash-Lite), picked under a real free-tier
-request-per-day limit and isolated behind a config flag, so swapping in a stronger model is a
-re-run, not a rewrite. And region/stage grounding is directional, not precise: the check looks
-for a token anywhere in the cited block of lines, so a dense chunk can both over- and
-under-credit it — fine as a signal of "the model invents regions," not as an exact rate.
+Stated plainly rather than buried. The corpus is two reports, one pipeline table fully censused and one earnings report measured over the subset of chunks I extracted, with that report's recall bounded to that slice and reported as such. One model does extraction and reasoning, chosen under a free-tier rate limit and isolated behind a flag, so the results are this model's and a stronger one is a re-run away. Region and stage grounding is directional, not exact: the check looks for a token anywhere in a cited block, reliable as a signal of "the model invents regions" but not as a precise rate. The live-tool evaluation runs against recorded API responses frozen as fixtures, deterministic and reproducible at the cost of not reflecting live data drift. Live data for the demo, frozen fixtures for the measurement. And the attribute-versus-subject reasoning gap is characterized, not fixed: a known, reproducible limitation with a scoped structural fix deferred.
 
-## Takeaways
-
-- A metric can be wrong about the model. The job isn't to produce a number; it's to produce a
-  number you've checked won't mislead the person who reads it.
-- The most valuable output of an eval isn't a score — it's a diagnosis. "0.41" is a verdict;
-  "the model misreads one table's status cells" is a work item.
-- Grounding and correctness answer different questions. Conflating "is it right" with "does it
-  cite a real source" hides both.
-- Most of the good design decisions weren't chosen — the data exposed them. Building the
-  measurement carefully is what made the model's real behavior visible.
+Three numbers told me this system was doing well, or badly, and every one of them was wrong until I looked closer. The value was never in producing a number that says it works. It was in building the kind of measurement that tells you, honestly, where it doesn't.
