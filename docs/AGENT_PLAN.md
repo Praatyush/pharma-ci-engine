@@ -1,6 +1,6 @@
 # AGENT_PLAN.md — Phase 4 research agent, locked design (DESIGN-LOCKED)
 
-> **Status:** Phase 4 **design locked**; build **not yet started**. This document plays the
+> **Status (2026-06: superseded).** This was the design-time plan for the Phase 4 research agent, written before implementation and locked prior to any code. Phase 4 (4A corpus Q&A and 4C live tools) is built and committed; this document is retained as a record of the design as planned, not as current status. For the system as actually built and the current working state, see HANDOFF.md. This document plays the
 > role for Phase 4 that `docs/RETRIEVAL_PLAN.md` played for Phase 3 — it is the locked plan the
 > build is **gated against**. It owns the *agent* design; system design lives in
 > `ARCHITECTURE.md`, run/debug rules in `CLAUDE.md` (root) + `src/agent/CLAUDE.md` +
