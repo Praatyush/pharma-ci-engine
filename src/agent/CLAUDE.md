@@ -7,7 +7,7 @@ that **cites sources**. Tools:
 
 - `corpus_retrieve` — hybrid retrieval over the indexed corpus (`src/rag`).
 - `clinicaltrials_lookup` — live ClinicalTrials.gov (`src/tools`).
-- `fda_lookup` — live FDA/EMA (`src/tools`).
+- `fda_lookup` — live openFDA / FDA (`src/tools`; openFDA serves FDA data only — EMA out of scope).
 
 Out of scope for now: multi-agent orchestration (deferred).
 

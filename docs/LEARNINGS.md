@@ -1,5 +1,233 @@
 # LEARNINGS — bug fixes, conventions, and gotchas (append-only; newest first)
 
+## 2026-06-13 — 4C live-tool escalation: regulatory_status works end-to-end; trial_status hits the attribute-vs-subject seam
+
+**What:** The 4C live-tool escalation slice (L1/L2 + the Q2 corpus control, `agent.golden.live.json`)
+was run against real Gemini (Flash-Lite, temperature 0) with **fixture-backed** tools (the committed
+`clinicaltrials_tak861.json` / `openfda_pitolisant.json`; keyless, no network — only the LLM calls go
+out). **L2 and Q2 PASS; L1 FAILS to escalate.**
+
+**L2 — clean entity-absence escalation works END-TO-END.** "Is pitolisant (Wakix) approved by the
+FDA?" → ASSESS emitted `gap(gap_kind='regulatory_status', follow_up_sub_queries=['pitolisant'])` →
+code dispatched `fda_lookup('pitolisant')` → the openFDA record entered the evidence table as a
+**record-identity EvidenceItem** (`doc_id='openfda:NDA211150'`, `line_range=None`) → SYNTHESIZE cited
+it → scored **1.0 on terminal_state / recall / precision / faithfulness / expected_route**. This
+validates the full 4C chain LIVE: `gap_kind`→tool dispatch, the record-identity faithfulness
+`None`-branch (`None↔None` by doc_id), and the `AP→approved` value atom. The existing SUBJECT CHECK
+fires correctly here because pitolisant is **genuinely absent** from the corpus (subject not present →
+gap).
+
+**L1 — the attribute-vs-subject sufficiency seam (the limitation).** "What is the current recruitment
+status of Takeda's Phase 3 oveporexton trial?" → ASSESS returned **`sufficient`/`corpus`** and never
+escalated; SYNTHESIZE answered the corpus's regulatory **"Filed"** stage instead of the absent
+recruitment status (recall 0.0, route `corpus`≠`trial_status`). **Root cause:** oveporexton **IS**
+present in the corpus (carrying regulatory stage), so the subject-presence SUBJECT CHECK passes and the
+model judges sufficient — it does **not** distinguish the *requested* attribute (recruitment status,
+ABSENT) from a *present, related* attribute (regulatory stage).
+
+**The one-attempt test (Case 1 → Case 2).** A narrow ATTRIBUTE CHECK was added to `_ASSESS_SYS`
+(recruitment status is DISTINCT from regulatory/development stage; an absent requested-attribute with a
+present related attribute must return `gap` with `gap_kind='trial_status'`) and L1 was re-run. **The
+ASSESS verdict was BYTE-IDENTICAL to the pre-edit run** — at temperature 0 the explicit instruction
+moved the model not at all. The edit was **reverted** (it did not achieve its purpose; the committed
+prompt is unchanged). Q2 held during that test (no over-escalation bleed).
+
+**Why / connection to 4A:** this is the **same architectural seam** as 4A's I3 / refusal-honesty
+finding ("the drug IS in the corpus, so the subject-presence check passes — the absent thing is the
+*fact*, not the subject"). One root cause, two surface symptoms: in 4A it is **refusal-honesty**
+(over-asserting on an absent fact); in 4C it is **failure-to-escalate** (answering a present related
+attribute instead of routing to the tool). It is **NOT prompt-fixable via the ASSESS instruction**
+(tested — byte-identical verdict); a real fix needs ASSESS to judge **attribute-coverage** rather than
+subject-coverage — a structural change **deliberately deferred (out of 4C scope)**. Characterized, not
+chased.
+
+**What this does NOT implicate:** the dispatch machinery, record-identity faithfulness, and value
+atoms are all **sound** (proven by L2's end-to-end pass + the earlier offline validation). L1's failure
+is confined to the model's ASSESS sufficiency judgment never reaching the escalation path.
+
+**Golden representation:** `agent.golden.live.json` is left **unchanged** — L1's entry expresses the
+**intended** behavior (escalate → answered); the measured failure is recorded **here in LEARNINGS
+only**, so the golden stays the aspirational truth layer and **L1 passing would be the signal** if the
+seam is ever fixed.
+
+**Rule:** before adding an ASSESS instruction to force escalation, classify the gap — **subject-absence**
+(the existing SUBJECT CHECK handles it; see L2) vs **attribute-absence with the subject present** (the
+unfixed seam; see L1). The latter is not movable by a prompt nudge at temperature 0 — characterize and
+defer, do not burn iterations on it.
+
+## 2026-06-13 — openFDA ORIG-submission selection is array-order-first, not submission_number-ordered
+
+**What:** `fda._original_submission_status` returns the status of the **first** submission with
+`submission_type=='ORIG'` in **array order**. The committed pitolisant fixture (`openfda_pitolisant.json`,
+NDA211150) carries six submissions with **two** ORIG rows, and array order ≠ submission_number order:
+`(SUPPL,7),(SUPPL,5),(ORIG,2),(SUPPL,3),(SUPPL,6),(ORIG,1)` — so the parser selects **ORIG number 2**
+(first encountered), not ORIG number 1 (the chronological original, which appears later).
+
+**Why it doesn't bite (yet):** every submission on this record is status `AP`, so `submission_status`
+resolves to `"AP"` regardless of which ORIG is chosen — L2 scores correctly. But "first ORIG in array
+order" is NOT "the chronological original (submission_number 1)".
+
+**Rule:** for whoever next touches `fda._original_submission_status` — the ORIG selection is
+array-order-first. If a future record's ORIG rows ever disagree on status, decide selection by
+`submission_number` (or report), don't rely on array order. Known shape, not a current bug.
+
+## 2026-06-13 — Citation faithfulness on dense tables is a retrieval-grain limit, not a synthesis-prompt one (step4)
+
+**What:** A SYNTHESIZE "cite precisely" nudge (cite only indices whose text states the claim's value;
+omit topically-related ones) was tried (step4) to fix the Q7/Q9 citation-precision weakness. It
+**FAILED its target and was reverted.** On the dense financial-table corpus the agent did not drop the
+stray chunk — it **re-selected to a different WRONG chunk**, dropping the one correct chunk it had:
+Q7 Kesimpta `(525,579)✓` → replaced by `(3978,4163)✗`; Q9 Kisqali `(580,636)✓` → replaced by
+`(291,307)✗`. Answered-stratum faithfulness FELL (0.77→0.72, and 0.77→0.67 on the original matched set).
+
+**Why:** the model cites by **evidence INDEX over chunk TEXT it cannot ground to specific source lines**
+(§5.7 — by design it never sees doc_id/line ranges). Among **near-duplicate financial-table fragments**
+(many rows with similar figures) it genuinely cannot identify which retrieved chunk states a given number.
+A prompt cannot supply that grounding. **Citation faithfulness on dense tabular data is a
+RETRIEVAL-GRAIN limitation** (needs finer-grained / line-level evidence units), **not a synthesis-prompt
+one.**
+
+**Also (a second, general lesson):** the citation-only instruction **bled into claim content** — claim
+wording changed on Q3/Q4/Q5/Q6/P1 (recall moved 0.56→0.59 via an incidental Q3 reword that happened to
+subset-match the golden). **A prompt edit is NOT cleanly isolated to its target behavior** — changing one
+instruction perturbs the whole generation, so a citation nudge must be measured for content drift
+(recall), not just its intended axis. **Rule:** prefer architectural/retrieval fixes over prompt nudges
+for grounding problems, and always check the off-target metrics after any prompt change.
+
+## 2026-06-13 — Token-set leniency CANNOT live in the shared matcher (the trust gate caught it on a path we weren't looking at)
+
+**What:** Crediting a correct attribute paraphrase ("net sales for Q1 2026" ≈ "Q1 2026 net sales")
+needed a true token-set ratio (the legacy "sorted-token ratio" was char-level `difflib` on a
+sorted-token-JOINED string, so one function word dropped a pure reorder to 0.895). The first
+implementation put the token-set ratio into the SHARED `normalize.similarity`.
+
+**Why it matters / the trap:** a benign function word ("for") and a meaning-changing qualifier
+("acquired") are **structurally identical** — both are "one extra token." No global structural measure
+can separate them. Putting token-set into `normalize.similarity` therefore created **false-positive
+extraction TPs**: `matching.py` uses `similarity`/`fuzzy_match` as the indication TP decision, where
+subset-containment must NOT match — and "acquired von Willebrand disease" (a different disease) and a
+verbose-qualifier indication both started matching "von Willebrand disease". **The full test suite caught
+this** (`tests/evals/test_matching.py`), on a code path the change wasn't aiming at — the trust gate /
+suite earned its keep.
+
+**Fix / rule:** paraphrase tolerance is **scoped** to the agent's `(subject, attribute)` matcher
+(`normalize.token_set_similarity` / `token_set_match`, used only by `agent_metrics._subj_attr_match`),
+which has the **value layer as a second gate**. The shared `normalize.similarity` / `fuzzy_match` stays
+STRICT for extraction indication-matching. **Rule: a looseness that helps one matcher can silently break
+another that shares it — scope leniency to where a second gate guards it, and never relax a shared
+matcher without running the FULL suite, not just the targeted cases.**
+
+## 2026-06-13 — Batch 6b: four contained scorer fixes credit correct-answer paraphrases without papering over agent errors
+
+**What:** The recall-zero partition + root-cause diagnostic split the Batch-6b step2 recall-zeros into a
+**SCORER bucket** (correct answers the scorer wrongly rejected) and an **AGENT bucket** (genuine agent
+errors). Four contained, scorer-only fixes resolved the SCORER bucket: (1) true token-set attribute ratio
+(scoped — see entry above); (2) `_ALIASES` coverage for AATD↔expansion (Q2) and NMEs↔expansion (Q8),
+same phrase mechanism as "iga nephropathy"; (3) `_AMOUNT_RE` space thousands-separators scoped to
+digit-triplets (Q9 "1 516"); (4) a degenerate percentage (bare "2%", missing the cc component/sign)
+scores as **wrong-value** via a non-matching sentinel key instead of raising — the
+raise-on-unrecognized-shape design is preserved for genuinely unclassifiable values.
+
+**Why it matters:** on saved step2 data answered-stratum recall went **0.111 → 0.556** (Q1, Q2, Q7, Q8,
+Q9 credited), while the partition's **AGENT bucket deliberately REMAINS unmatched** — Q5/Q6 (company-level
+subject vs drug), P1 (drug unnamed), P3 (incomplete dual-currency value) all correctly stay non-matches.
+The 6-agent trust gate re-passed (oracle 1.0); suite at 135.
+
+**Rule:** before changing a scorer to lift a metric, **partition the misses** into scorer-should-have-
+matched vs genuine-agent-error vs golden-phrasing, and fix ONLY the first — a metric gain that also
+credits the agent's real errors is a regression in disguise, not an improvement.
+
+## 2026-06-13 — Batch 6b: the granularity nudge worked at the agent level; it RELOCATED the recall bottleneck into the scorer
+
+**What:** A single targeted SYNTHESIZE-prompt nudge (steer the model to phrase each `attribute` with the
+qualifying context the fact carries — indication / period / region / scope) was applied and the full
+13-question golden re-run with real Gemini (label `step2`). The nudge **worked at the agent level**:
+every step2 claim now carries context (`"net sales for Q1 2026"`, `"approval status in IgA
+nephropathy"`, `"development stage for AATD … in the US"`). It is **NOT overfit** — the *same general
+template* produced both a matching attribute (Q1) and a non-matching one (Q7 `"net sales for Q1 2026"`
+vs golden `"Q1 2026 net sales"`); alignment is surface word-order, not golden-memorization.
+Answered-stratum recall moved **0.00 → 0.11**: **Q1 became a perfect 1.0/1.0/1.0** — the first
+real-Gemini question to score across all three claim metrics (recall + precision + faithfulness).
+
+**Why it matters — the remaining recall-zeros decompose into FOUR distinct causes that must NOT be
+lumped** (measured with the real `normalize.similarity`, 0.90 match threshold, and `value_match`):
+
+- **(A) SCORER exposed-limitation.** Correct answer, value matches, but attribute similarity **~0.895 <
+  the 0.90 difflib threshold → rejected** (Q7: `"net sales for Q1 2026"` vs golden `"Q1 2026 net
+  sales"`, reordered-identical, scored 0). **The proven claim is narrow:** real agent output exposed a
+  scorer-design limitation **invisible to oracle validation** — the Batch-3 oracle tested the *exact*
+  golden attribute strings, so the threshold's rejection of correct **paraphrases** was never seen.
+  **The CORRECT FIX is NOT yet determined** — candidates include the threshold, attribute
+  representation, incomplete normalization, an ontology, or golden variability. **Do not prejudge.**
+- **(B) SCORER value-parser limitation.** Space-separated thousands (`"USD 1 516 million"`) do not parse
+  (Q9), so even a matched attribute would fail the value comparison.
+- **(C) GENUINE AGENT ERROR.** Comparison questions answered at **company** granularity (`"Takeda"`)
+  where the golden blesses **drug** granularity (`"mezagitamab"`); Q6 also **drops Jakavi** (Q5, Q6).
+  This is the agent **actually wrong** — NOT a scorer issue, and **a scorer change must NOT paper over
+  it.**
+- **(D) GOLDEN idiosyncratic attribute vocabulary.** `"lifecycle register"` (Q3), `"China filing
+  stage"` (Q4). Chasing these by tuning the agent would **overfit**; they may indicate golden-authoring
+  variability.
+
+**Key insight:** this is the **same CLASS** as the Batch-2 `normalize` gate and the Batch-6a
+citation-direction flip — **a scorer assumption that only broke under real agent output.** But whether
+the FIX is the same (canonicalization) is an **OPEN design question**: attributes are **compositional**
+(core × indication × period × region), unlike values' **finite closed set**, so the Batch-2
+closed-set-canonicalizer may **not transfer**.
+
+**Rule:** the agent's **true answer quality is materially higher than recall = 0.11** — (A) and (B) are
+**measurement-limited**, only (C) is genuine agent error. Before any scorer change, **PARTITION the
+recall-zeros** into scorer-should-have-matched vs genuine-agent-error vs golden-phrasing; **no threshold
+tweak without that partition.**
+
+## 2026-06-13 — Batch 6b: refusal honesty is architecturally unreachable via the ASSESS nudge alone
+
+**What:** A general ASSESS subject-grounding nudge (do not return `sufficient` when the question's
+specific subject/fact is absent from the evidence) was applied alongside Entry above. It **fired** —
+ASSESS returned `exhausted` on I2 — but **resolved none of the four hard questions** (I2, I3, P1, P3) to
+their golden terminal state.
+
+**Why:** the loop state machine (`loop.py`) routes **`exhausted` + ≥1 surviving claim →
+`partially_answered`**; **only ZERO surviving claims → `insufficient_evidence`**. So honest refusal
+requires **SYNTHESIZE to ALSO emit no claims** when only off-target/related content sits in the
+evidence. Observed: **I2 → `partially_answered`** (ASSESS refused, but SYNTHESIZE still manufactured 3
+off-target PV claims); **I3 over-asserts** filing status as if answering a *recruitment* question (the
+drug IS in the corpus, so the subject-presence check passes — the absent thing is the *fact*, not the
+subject); **P1/P3** assert over-broad *scope* vs the golden's single blessed claim (not a
+subject-absence case at all).
+
+**Rule:** this is **architectural, NOT a prompt fix** — it needs the **ASSESS-`exhausted` ↔
+SYNTHESIZE-refusal coupling** (or treating off-target synthesis as non-surviving in the state machine).
+It is the agent's **biggest genuine open weakness.** Do **not** keep tuning ASSESS against these four
+questions — that would overfit to four examples.
+
+## 2026-06-12 — Phase 4A scorer validated BEFORE any agent code; deterministic value layer fixed the normalize gate
+
+**What:** The Phase 4A answer-level scorer (value-matching layer + four metrics) was built and **proven
+against five known-output sanity agents** (null / oracle / citation-failure / hallucination /
+over-claiming) over an independently-derived, hardcoded expected-score matrix (65 cells) — the **ORACLE
+scoring 1.0 across all claim-bearing questions confirms the scorer round-trips the golden** — **before
+any research-agent code exists** (the Phase-2 measure-before-the-thing discipline; the matrix is
+asserted, not recomputed, so a pass reflects correctness, not a tautology).
+
+**Why it matters / the gate it caught:** a mandatory pre-build gate found `normalize.py`'s fuzzy path
+(0.90 threshold) could not match the golden's **prose values**, with two outright defects: **sign-loss**
+on signed percentages (`+2% / -2%` canonicalized identically to `-2% / +2%`, so an opposite value would
+false-match) and **`m` not recognized** as a million scale token. Resolved by a **deterministic** value
+layer — a closed-set canonicalizer (phase / status / count / indication_present) + a structured numeric
+comparator (currency-magnitude, sign-preserved percentage-pair) that **raises** on any unrecognized
+shape — with **zero golden edits** and **no fuzzy threshold / no LLM** (the refuse-uncalibrable-knobs
+discipline). Status atoms collapse filed+submission → one `pending_filing` (same regulatory state, two
+source vocabularies); `approved` kept distinct.
+
+**Rule:** build the measurement (golden + scorer) and prove it with known-output fixtures BEFORE the
+thing it measures; when an existing matcher can't handle the values, **gate-and-report** rather than
+silently lowering a threshold.
+
+## 2026-06-12 — AGENT_CONTRACT.md freezes the answer-object ↔ scorer interface
+
+`docs/AGENT_CONTRACT.md` was written to **freeze the Phase 4 answer-object interface** so the scorer and the future research agent build against **one spec and cannot drift** — transcribed from frozen `docs/AGENT_PLAN.md` decisions; the answer-object analogue of the frozen `src/evals/golden/agent.golden.json`.
+
 ## 2026-06-11 — Span-keyed fusion adopted; parameter-free fusion CANNOT preserve unique reach
 
 **What:** Cross-leg fusion is now `rag.fusion.rrf_fuse_by_span` — RRF keyed on the span

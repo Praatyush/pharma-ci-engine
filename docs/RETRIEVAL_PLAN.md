@@ -1,6 +1,6 @@
 # RETRIEVAL_PLAN.md — Phase 3 retrieval, staged implementation plan (DESIGN-LOCKED)
 
-> **Status:** retrieval **design locked**; Stage A (chunk-leg) implementation **not yet started**.
+> **Status (2026-06: superseded).** This was the design-time staged plan for Phase 3 retrieval, locked before implementation. Phase 3 is fully built and merged to main; this document is retained as a record of the plan as written, not as current status. For the system as actually built, see ARCHITECTURE.md and HANDOFF.md.
 > This is the design-locked reference Stage A builds against. It owns the *retrieval* build plan;
 > system design lives in `ARCHITECTURE.md`, run/debug rules in `CLAUDE.md` + `src/rag/CLAUDE.md`,
 > the eval contract in `src/evals/golden/retrieval.golden.json` (relevance policy v2). No retrieval

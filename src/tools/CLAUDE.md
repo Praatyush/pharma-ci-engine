@@ -6,7 +6,8 @@ External API clients that keep the system current instead of limited to static
 PDFs:
 
 - **ClinicalTrials.gov** (v2 API) — trial status, phase, endpoints.
-- **FDA / EMA** (openFDA) — approvals, regulatory actions.
+- **FDA** (openFDA) — approvals, regulatory actions. (openFDA serves FDA data
+  only; EMA is out of scope.)
 
 Consumed by `src/agent` as `clinicaltrials_lookup` and `fda_lookup`.
 

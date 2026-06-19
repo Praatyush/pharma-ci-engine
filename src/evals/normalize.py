@@ -54,6 +54,14 @@ _ALIASES = {
     "hl": "hodgkin lymphoma",
     "cll": "chronic lymphocytic leukemia",
     "psc": "primary sclerosing cholangitis",
+    # abbreviation <-> spelled-out expansions. The KEY is the multi-word spelled-out form so the phrase
+    # loop below applies it IN-STRING (the same mechanism as "iga nephropathy"); a single-token key with
+    # a multi-word value is NOT expanded in-string by the single-token step, so the expansion must be the
+    # key. A spelled-out form folds to its abbreviation, so an agent's expansion and the golden's
+    # abbreviation canonicalize alike (Q2 "AATD", Q8 "NMEs").
+    "alpha 1 antitrypsin deficiency": "aatd",
+    "new molecular entities": "nmes",
+    "new molecular entity": "nme",
     # modality
     "mab": "monoclonal antibody",
     "adc": "antibody drug conjugate",
@@ -110,12 +118,41 @@ def canonical_term(text: str | None) -> str:
     return _WS_RE.sub(" ", s).strip()
 
 
+def _token_set_ratio(ca: str, cb: str) -> float:
+    """A TRUE token-SET ratio (fuzzywuzzy/rapidfuzz ``token_set_ratio`` algorithm, on stdlib difflib).
+
+    Compares token SETS, not their char-joined order: it forms the sorted intersection ``t0`` and the
+    intersection extended by each side's leftover tokens (``t1``, ``t2``), and returns the max pairwise
+    ratio. The load-bearing property: when one term's tokens are a SUBSET of the other's — a reorder
+    plus extra words — the smaller side's leftover is empty, so ``t0 == t_subset`` and the ratio is
+    **1.0**. This credits "net sales for Q1 2026" vs "Q1 2026 net sales" (subset + one function word)
+    WITHOUT enumerating a stopword list. A genuinely different term (no shared tokens) yields an empty
+    intersection -> 0.0, so distinct subjects/attributes still fail.
+    """
+    sa, sb = set(ca.split()), set(cb.split())
+    inter = sorted(sa & sb)
+    if not inter:                       # no shared tokens -> genuinely different (never spuriously 1.0)
+        return 0.0
+    diff_a, diff_b = sorted(sa - sb), sorted(sb - sa)
+    t0 = " ".join(inter)
+    t1 = " ".join(inter + diff_a)
+    t2 = " ".join(inter + diff_b)
+    r = lambda x, y: difflib.SequenceMatcher(None, x, y).ratio()
+    return max(r(t0, t1), r(t0, t2), r(t1, t2))
+
+
 def similarity(a: str | None, b: str | None) -> float:
     """Similarity in [0, 1] over canonical terms.
 
     Exact-after-canonicalization -> 1.0. Otherwise the max of a sequence-ratio and
     a sorted-token ratio, so word-order/qualifier variants score high without
     merging genuinely different terms.
+
+    NOTE: this is the **strict** matcher used for extraction/indication matching, where
+    subset-containment must NOT match (a narrowing qualifier like "acquired vWD" ⊆ "vWD", or a verbose
+    qualifier, is intentionally NOT a true positive — see ``matching._indication_subset``). For AGENT
+    (subject, attribute) matching, which must credit a reorder-plus-function-word paraphrase, use
+    :func:`token_set_similarity` instead.
     """
     ca, cb = canonical_term(a), canonical_term(b)
     if not ca and not cb:
@@ -132,8 +169,30 @@ def similarity(a: str | None, b: str | None) -> float:
 
 
 def fuzzy_match(a: str | None, b: str | None, threshold: float = FUZZY_MATCH) -> bool:
-    """True when the two terms match at or above ``threshold`` (default 0.90)."""
+    """True when the two terms match at or above ``threshold`` (default 0.90), STRICT matcher."""
     return similarity(a, b) >= threshold
+
+
+def token_set_similarity(a: str | None, b: str | None) -> float:
+    """:func:`similarity` augmented with a TRUE token-SET ratio (:func:`_token_set_ratio`).
+
+    Identical to ``similarity`` except a reorder-plus-extra-tokens variant scores ~1.0 (when one token
+    set is a subset of the other). ``max`` makes it monotonically >= ``similarity``, so exact matches
+    stay 1.0 and nothing regresses. **Scoped to AGENT (subject, attribute) matching** — NOT used for
+    extraction indication matching, where subset-containment must stay a non-match. The token-set ratio
+    cannot distinguish a benign function word ("for") from a meaning-changing qualifier ("acquired")
+    structurally, so applying it only where attribute paraphrase is desired (and where a second value
+    gate follows) is deliberate.
+    """
+    ca, cb = canonical_term(a), canonical_term(b)
+    if not ca or not cb:
+        return similarity(a, b)
+    return max(similarity(a, b), _token_set_ratio(ca, cb))
+
+
+def token_set_match(a: str | None, b: str | None, threshold: float = FUZZY_MATCH) -> bool:
+    """True when the token-SET similarity is at or above ``threshold`` (default 0.90)."""
+    return token_set_similarity(a, b) >= threshold
 
 
 # --------------------------------------------------------------------------- #

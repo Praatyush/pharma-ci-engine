@@ -1,0 +1,77 @@
+{
+  "golden_schema_version": "agent-golden-live-v1",
+  "questions": [
+    {
+      "question_id": "L1",
+      "question": "What is the current recruitment status of Takeda's Phase 3 oveporexton trial?",
+      "construct": "single",
+      "expected_terminal_state": "answered",
+      "expected_route": "trial_status",
+      "reference_claims": [
+        {
+          "claim_id": "L1-c1",
+          "subject": "oveporexton",
+          "attribute": "recruitment status",
+          "value": "completed",
+          "acceptable_spans": [
+            {
+              "doc_id": "ctgov:NCT06470828",
+              "line_range": null
+            }
+          ]
+        }
+      ],
+      "verified_gap": null,
+      "verified_absence": null,
+      "authoring_notes": "trial_status escalation (attribute-gap-with-distractor). The corpus lacks oveporexton recruitment status: its oveporexton/TAK-861 rows carry only regulatory stage (Filed dates), not recruitment/enrollment status (cf. frozen-golden I3's verified_absence; the corpus even carries distractor recruitment language for OTHER assets, e.g. TAK-755 'actively recruiting'). But the same pipeline row exposes the development code TAK-861 (the Neuroscience Pipeline and Recent Pipeline Progress tables pair '<oveporexton>' with 'TAK-861'), so ASSESS escalates trial_status and the agent queries ClinicalTrials.gov with the OBSERVED code TAK-861 (CT.gov indexes these trials under the code, not the INN — query.intr=oveporexton returns zero studies). Blessed value 'completed' (canonical; the value layer folds the CT.gov overallStatus 'COMPLETED' to 'completed') is sourced from the authoritative ClinicalTrials.gov record NCT06470828 (the anchor Phase 3 Completed Narcolepsy Type 1 trial) and agrees with the committed fixture clinicaltrials_tak861.json. Provenance is record-identity (doc_id 'ctgov:NCT06470828', line_range null — no source lines)."
+    },
+    {
+      "question_id": "L2",
+      "question": "Is pitolisant (Wakix) approved by the FDA?",
+      "construct": "single",
+      "expected_terminal_state": "answered",
+      "expected_route": "regulatory_status",
+      "reference_claims": [
+        {
+          "claim_id": "L2-c1",
+          "subject": "pitolisant",
+          "attribute": "approval status",
+          "value": "approved",
+          "acceptable_spans": [
+            {
+              "doc_id": "openfda:NDA211150",
+              "line_range": null
+            }
+          ]
+        }
+      ],
+      "verified_gap": null,
+      "verified_absence": null,
+      "authoring_notes": "regulatory_status escalation (clean entity-absence). pitolisant (Wakix) is WHOLLY absent from the corpus — confirmed by case-insensitive grep over data/reports/ (a clean entity-absence, distinct from L1's attribute-absence) — so ASSESS escalates regulatory_status to openFDA. Blessed value 'approved' (canonical) is sourced from the authoritative Drugs@FDA record application NDA211150 (original/ORIG submission status code 'AP', which the value layer canonicalizes AP->approved) and agrees with the committed fixture openfda_pitolisant.json. Provenance is record-identity (doc_id 'openfda:NDA211150', line_range null — no source lines)."
+    },
+    {
+      "question_id": "Q2",
+      "question": "What development stage is fazirsiran in for AATD liver disease in the US?",
+      "construct": "single",
+      "expected_terminal_state": "answered",
+      "expected_route": "corpus",
+      "reference_claims": [
+        {
+          "claim_id": "Q2-c1",
+          "subject": "fazirsiran",
+          "attribute": "development stage for AATD liver disease in the US",
+          "value": "Phase III",
+          "acceptable_spans": [
+            {
+              "doc_id": "qr2025_q4_Pipeline_table_en",
+              "line_range": [236, 248]
+            }
+          ]
+        }
+      ],
+      "verified_gap": null,
+      "verified_absence": null,
+      "authoring_notes": "CORPUS CONTROL — carried over verbatim from agent.golden.json (Q2): question, construct, expected_terminal_state, and reference_claims are unchanged (NOT re-authored), with only expected_route='corpus' and these notes added. With live tools enabled the agent must still answer this from the corpus (fazirsiran's US AATD development stage is a localized, extracted pipeline fact, spans L236-248) and must NOT escalate to a live tool — proving the corpus-first invariant (AGENT_PLAN §9.1) and that gap_kind dispatch is discerning, not trigger-happy. A tool escalation here would be a dispatch failure even if it happened to answer."
+    }
+  ]
+}

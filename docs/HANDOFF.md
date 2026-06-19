@@ -5,6 +5,325 @@ decisions, files changed, outstanding issues, and the recommended next step.
 
 ---
 
+## Phase 4C — SUBSTANTIVELY COMPLETE: live-tool escalation built, committed, live-validated; HTTP layer under regression (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **Phase 4C (live tools) is SUBSTANTIVELY COMPLETE — the live-tool escalation
+capability is built, committed, live-validated on the clean entity-absence case, with the working HTTP
+layer under a committed regression suite.** On branch `phase-4-agent`, **local-only — NOT yet merged or
+pushed.** The merge + push to `main` is **deferred to a later deliberate step** (per the original plan;
+the whole phase has been local-only).
+
+- **What was built/committed (the full 4C chain, in order):** the 4C contract docs (`73a0f8d`) + the
+  `httpx` dependency gate (`3a6d740`); the two API clients — CT.gov `clinicaltrials_lookup` (`fbb3d66`)
+  and openFDA `fda_lookup` (`7a8efe4`); the recorded fixtures (`1ed7221`); the types/seam plumbing +
+  `gap_kind` dispatch (`c55aaf2`, `3cc66f0`); the scorer record-identity faithfulness + value-layer
+  atoms (`a209ddd`, `50ae2c3`); the live golden (`d40fdba`); the live-eval findings doc (`9ce150c`);
+  the **§6.5 injected-transport seam** (`b5d1a61`); and the **MockTransport client test suite**
+  (`305d1bf`). **Suite at 144** (135 pre-4C + 9 new client tests).
+- **What works (live-validated, real Gemini temp 0):** **`regulatory_status` escalation END-TO-END**
+  (L2 — "is pitolisant approved?" → `fda_lookup` → `openfda:NDA211150` record-identity citation →
+  scored **1.0**) + the **corpus control** (Q2 answers fazirsiran Phase III from the corpus, calls NO
+  tool, scored 1.0). The live-tool capability is **demonstrated on the clean entity-absence case**; the
+  corpus-first invariant holds (dispatch is discerning, not trigger-happy).
+- **Known limitation (characterized, not a bug):** **`trial_status` escalation for
+  attribute-absence-with-present-subject (L1)** — the **4A I3 attribute-vs-subject seam** (subject
+  present, requested fact absent → ASSESS judges sufficient and never escalates). **Not prompt-fixable**
+  (a narrow ATTRIBUTE CHECK produced a **byte-identical** verdict; reverted, committed prompt
+  unchanged); structural fix **deferred, out of scope**. See `LEARNINGS.md` (2026-06-13).
+- **Coverage / robustness:** the **HTTP client layer is covered by the committed MockTransport suite**
+  (keyless / networkless, §6.5 — request shape + parsed records + the current raise/propagate failure
+  behavior). The **§9.3 failure-handling wrapper is deliberately DEFERRED / out of 4C scope** — the
+  clients raise/propagate by design; the no-match behavior (incl. the confirmed openFDA
+  404-on-no-match) is **characterized, not built**.
+- **Golden:** `agent.golden.live.json` left as authored — L1's entry expresses the **intended**
+  behavior; the measured L1 failure is recorded in `LEARNINGS.md` only, so **L1 passing would be the
+  signal** if the seam is ever fixed.
+
+### Next
+- **(1) Merge `phase-4-agent` → `main` and push** — **deferred, to be done deliberately later**; the
+  whole phase has been **local-only** (local `main` is at the pushed Phase-3 state — `e1e2b72`, in sync
+  with `origin/main`; all 4C work is on `phase-4-agent`, unmerged and unpushed).
+- **(2) Deferred-and-optional future work, NOT 4C scope:** the §9.3 failure wrapper (tool failure →
+  `insufficient_evidence`, incl. the openFDA 404 mapping); **4B report mode**; multi-agent
+  orchestration. Each is its own gated step if/when picked up.
+- **(3) The consolidated project report / resume rewrite** — the originally-deferred capture work, now
+  that the build has authentic depth behind it.
+
+---
+
+## Phase 4C — live-tool slice RUN: regulatory_status (L2) + corpus control (Q2) pass live; trial_status (L1) a documented limitation (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **Phase 4C live-tool dispatch is built, committed, and DEMONSTRATED LIVE on
+the clean entity-absence case; one route (trial_status / L1) is a documented limitation, not a bug.**
+On branch `phase-4-agent`. The full 4C build chain is committed: the two API clients
+(`clinicaltrials_lookup` `fbb3d66`, `fda_lookup` `7a8efe4`), the recorded fixtures (`1ed7221`), the
+types/seam plumbing + `gap_kind` dispatch (`c55aaf2`, `3cc66f0`), the scorer record-identity
+faithfulness + value-layer atoms (`a209ddd`, `50ae2c3`), and the live golden (`d40fdba`); the `httpx`
+dependency gate (`3a6d740`) and the 4C contract docs (`73a0f8d`) preceded them.
+
+- **What works LIVE (real Gemini, temp 0; fixture-backed tools — keyless, no network):**
+  - **L2 — `regulatory_status` escalation, scored 1.0 END-TO-END.** "Is pitolisant approved?" → ASSESS
+    `gap(regulatory_status, ['pitolisant'])` → `fda_lookup('pitolisant')` → openFDA record
+    (`openfda:NDA211150`, record-identity span, `line_range=None`) → cited by SYNTHESIZE →
+    terminal_state / recall / precision / faithfulness / expected_route all 1.0 / match.
+  - **Q2 — corpus control holds.** Answers fazirsiran Phase III from the corpus, calls NO tool, scores
+    1.0 — the corpus-first invariant proven (dispatch is discerning, not trigger-happy).
+  - The 4C live-tool capability is **demonstrated on the clean entity-absence case.**
+- **Known limitation — `trial_status` escalation for attribute-absence-with-present-subject (L1).**
+  "Recruitment status of oveporexton's Phase 3 trial" → ASSESS returns `sufficient`/`corpus` and never
+  escalates (it answers the corpus's regulatory "Filed" stage instead). This is the **4A I3
+  attribute-vs-subject seam** (subject present, requested fact absent) and is **NOT prompt-fixable** —
+  a narrow ATTRIBUTE CHECK was tried and produced a **byte-identical** verdict; **reverted, the
+  committed prompt is unchanged.** Structural fix (ASSESS judging attribute-coverage, not
+  subject-coverage) **deferred, out of 4C scope.** See `LEARNINGS.md` (2026-06-13).
+- **Confirmed fact carried forward (for §9.3):** openFDA returns **HTTP 404 with an `{"error": ...}`
+  body** on a zero-match search (NOT a 200 with empty `results`) — the §9.3 wrapper must map that
+  no-match 404 to empty-evidence → `insufficient_evidence`, distinct from a real transport failure.
+- **Golden unchanged:** `agent.golden.live.json` is left as authored — L1's entry expresses the
+  intended (escalate → answered) behavior; the measured L1 failure lives in `LEARNINGS.md` only, so
+  **L1 passing would be the signal** if the seam is ever fixed.
+
+### Next
+- **The committed MockTransport fixture-backed test suite (§6.5)** over the WORKING paths (L2
+  `regulatory_status` + Q2 corpus; the dispatch / record-identity-faithfulness / value-atom chain),
+  keyless and networkless.
+- **Deferred (out of 4C scope): the §9.3 typed-failed-result wrapper** (tool failure →
+  `insufficient_evidence`, incl. the confirmed openFDA 404-on-no-match mapping above). The clients
+  **raise/propagate by design**; this is explicitly **NOT built in 4C** — a decided descope, not
+  unfinished work (the no-match behavior is *characterized*, and the 404 fact stays recorded above if
+  §9.3 is ever picked up later).
+- L1 stays a documented limitation — do **not** keep tuning ASSESS against it.
+
+---
+
+## Phase 4C — DESIGN LOCKED: live-tools contract ratified; 4B deferred (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **Phase 4C (live tools) design is LOCKED; NO client code exists yet.** On
+branch `phase-4-agent`. Docs-only: the 4C contract is recorded in `AGENT_PLAN.md` §9 (agent/tool
+design) + `AGENT_CONTRACT.md` §6 (eval additions); `src/tools/` stays scaffold-only and
+`agent.golden.json` is untouched.
+
+- **Sub-phase ordering LOCKED: 4A → 4C; 4B deliberately deferred** (optional later piece). One-line
+  rationale: 4B is **lowest-leverage / fuzziest-eval** (presentation over an already-cited answer),
+  4C is **higher-value** (external-integration + the fixture-vs-live reproducibility story).
+  Supersedes the old `AGENT_PLAN` §8 "4b gate before 4c" sequencing (reconciled in the same docs edit).
+- **4C contract — LOCKED (full detail in `AGENT_PLAN` §9 + `AGENT_CONTRACT` §6; not duplicated here):**
+  - **Go-live:** corpus-first, **absence-driven gap-fill**; **staleness/freshness explicitly RULED
+    OUT** (no clean API as-of signal + corpus coverage). ASSESS emits a **closed-set gap-kind
+    `{corpus, trial_status, regulatory_status}`**; **code owns kind→tool dispatch** (model names the
+    gap, never calls the tool).
+  - **Two tools:** `clinicaltrials_lookup` (CT.gov v2), `fda_lookup` (**openFDA only — NOT EMA**; the
+    `src/tools/CLAUDE.md` EMA drift was corrected in the prior docs edit).
+  - **Failure:** tool failure → **typed failed result → existing `insufficient_evidence`** (NO new
+    terminal state); **trajectory-recorded** (failure-cause vs genuine absence); catch
+    timeout/HTTP-error/malformed-body; **no retries** (relies on the §5.6 cap + §5.5 machine); **no
+    cross-tool fallback**; openFDA key **env-read, absence non-fatal**; failure handling
+    **unit-tested, not fixtured**.
+  - **Live eval:** separate **`agent.golden.live.json` (`agent-golden-live-v1`)**, frozen golden
+    untouched; **L1** (oveporexton recruitment → a Completed CT.gov trial) + **L2** (pitolisant/Wakix
+    approval → openFDA) + **one reused corpus control**; **single-mode `live_enabled`**;
+    **record-identity provenance** (`ctgov:<NCT>` / `openfda:<app_no>`, `line_range: null`,
+    record-level containment); **`expected_route` tested-not-scored**; fixtures committed under
+    **`src/evals/fixtures/`**, **transport-mocked**, **keyless eval**.
+
+### Next — 4C build: dependency gate, then first tool client
+- **4C contract locked, no client code yet.** Next build step is the **dependency gate (add `httpx`
+  to `pyproject.toml`, with approval)** + the **first tool client** in `src/tools/` (mocked-HTTP unit
+  tests, no live network), then the live golden + fixtures scored against the §6 contract.
+
+---
+
+## Phase 4A — COMPLETE: final measured result on step3; seam committed (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **Phase 4A is COMPLETE.** The research agent (PLAN/ASSESS/SYNTHESIZE Gemini
+seam) runs end-to-end over the 13-question golden and is scored by the committed value-matching scorer.
+`src/agent/gemini_seam.py` is now **committed** at its final, endorsed prompts (the granularity nudge in,
+the failed citation-precision nudge reverted). On branch `phase-4-agent`.
+
+- **Final measured result (step3, fully reproducible at temperature=0 — byte-identical claims across
+  re-runs):** answered stratum (n=9) **terminal_ok 1.00, recall 0.56, precision 0.70, faithfulness
+  0.77**; partially_answered (n=2) and insufficient_evidence (n=2) **terminal_ok 0.00** (the
+  refusal-honesty architectural issue, below). Runs are gitignored scratch
+  (`data/eval/reports/agent_step{1..4}.json`).
+- **The measurement arc:** answered-stratum recall **0.00** (baseline) → **0.11** (SYNTHESIZE
+  granularity nudge) → **0.56** (after the four committed scorer fixes that credit correct paraphrases
+  without papering over agent errors). Each step was measured before the next; no end-to-end guessing.
+- **Remaining gaps — cleanly decomposed (all characterized, none blocking):**
+  - **Q3/Q4 — golden-phrasing / synonym** ("lifecycle register"; "China filing stage" vs "approval
+    status in China"). Characterized; chasing them by tuning the agent would overfit to golden strings.
+  - **Q5/Q6/P1 — genuine agent subject-granularity error** (company-level subject vs drug; drug
+    unnamed). A real agent weakness, correctly left unmatched by the scorer.
+  - **Q7/Q9 — citation precision** — a **retrieval/chunk-grain limitation on dense financial tables,
+    NOT prompt-fixable** (the step4 citation-precision nudge was tried and REVERTED — it made chunk
+    selection worse and bled into claim content; see `LEARNINGS.md`).
+  - **Refusal honesty (P1/P3/I2/I3)** — `insufficient_evidence` is **architecturally unreachable via the
+    ASSESS nudge alone** (the state machine routes `exhausted` + surviving claims → `partially_answered`).
+    Needs the ASSESS-`exhausted` ↔ SYNTHESIZE-refusal coupling.
+
+### Next — Phase 4A is DONE
+- No further 4A tuning or runs. Future agent-side work, if any, is **subject-granularity** (Q5/Q6/P1) and
+  the two architectural items (**finer-grained/line-level citation evidence** for Q7/Q9; the
+  **refusal coupling** for the partially/insufficient strata) — all characterized, none blocking 4A.
+
+---
+
+## Phase 4A — 6b: full 13-question run (step1 baseline + step2 tuned); first eval numbers (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **Batch-6b step1 (pre-tuning baseline) AND step2 (one tuning iteration) are
+both COMPLETE; the full 13-question agent has run end-to-end against real Gemini and produced the first
+Phase-4A eval numbers.** On branch `phase-4-agent`. `src/agent/gemini_seam.py` is **still untracked /
+uncommitted** (now carries the two step2 nudges). Saved run artifacts live in gitignored
+`data/eval/reports/agent_step1.json` and `agent_step2.json`. **Nothing committed this step.** Quota:
+step2 = **~39 Flash-Lite calls** (all 13 questions at 1 iteration; `2 + iterations` per question).
+
+- **CORRECTION to the 6a entry below.** The 6a entry's "full run NOT yet done / quota ~3 calls" status
+  is **stale** — the full baseline run (`step1`) DID happen (all 13 scored, saved to
+  `agent_step1.json`). This entry supersedes it.
+- **Two prompt nudges applied for step2** (both general, neither golden-memorizing): a SYNTHESIZE
+  granularity nudge (carry indication/period/region/scope into the `attribute`) and an ASSESS
+  subject-grounding honesty nudge. Scorer / golden / `AGENT_CONTRACT` / `retrieval.py` / `resolve.py`
+  **untouched**.
+- **First real eval numbers (step2, sliced per `AGENT_CONTRACT` §5).** Answered stratum (n=9):
+  **terminal_ok 1.00, recall 0.11** (up from 0.00), precision **1.00 (/1)**, faithfulness **1.00 (/1)**.
+  **Q1 is a perfect 1.0/1.0/1.0** — the first real-Gemini question scoring across all three claim
+  metrics. partially_answered (n=2) and insufficient_evidence (n=2) strata: terminal_ok **0.00**
+  (unchanged); insufficient_pass **0.00**. **The recall = 0.11 is measurement-limited — the agent's
+  true answer quality is materially higher** (see `LEARNINGS.md` 2026-06-13 entry 1: causes A/B are
+  scorer/value-parser limits, only C is genuine agent error).
+- **TWO open issues, NEITHER resolved (and not to be papered over):**
+  1. **Attribute matching** — real agent output exposed a **scorer-design limitation** (correct,
+     value-matching paraphrases scored ~0.895 < the 0.90 difflib threshold; e.g. Q7 `"net sales for Q1
+     2026"` vs golden `"Q1 2026 net sales"`). **The correct fix is an OPEN design question** — NOT
+     necessarily Batch-2-style closed-set canonicalization, because attributes are compositional, not a
+     finite closed set.
+  2. **Refusal honesty** — `insufficient_evidence` is **architecturally unreachable via the ASSESS
+     nudge alone** (the state machine routes `exhausted` + surviving claims → `partially_answered`);
+     needs the ASSESS-`exhausted` ↔ SYNTHESIZE-refusal coupling. The agent's biggest genuine weakness.
+
+### Next — focused design discussion on attribute matching (NOT a prompt tweak, NOT a threshold tweak)
+- **First PARTITION the recall-zeros** into (i) scorer-should-have-matched, (ii) genuine-agent-error,
+  (iii) golden-phrasing — then decide **whether/how** to change the scorer. **No threshold tweak without
+  that partition.** Refusal honesty (issue 2) is a separate, architectural workstream.
+
+---
+
+## Phase 4A — 6a: LLM seams live on Q1; citation-faithfulness direction corrected (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **The three LLM seams (PLAN/ASSESS/SYNTHESIZE) make real Gemini calls and the
+full pipeline is proven end-to-end on ONE question (Q1); a 6a-revealed scorer/contract correction is
+committed. Full 13-question run NOT yet done (that is 6b).** On branch `phase-4-agent`. Quota spent so
+far: ~3 Flash-Lite calls (the single Q1 run).
+
+- **Real LLM seam (Batch 6a) — built, NOT yet committed.** `src/agent/gemini_seam.py` (`GeminiLLMSeam`)
+  drives PLAN/ASSESS/SYNTHESIZE via `extraction.gemini_client.generate_structured` (same SDK / key /
+  Flash-Lite / structured-output pattern; response-view models mirror `extraction.models`, no
+  `extra="forbid"`). §5.7 honored: the model sees a 0-based NUMBERED evidence list (text only — no
+  doc_ids / line ranges) and cites by INTEGER index. **Held back from commit** pending a 6b SYNTHESIZE
+  prompt tweak.
+- **Q1 run — all four plumbing checks PASS.** (a) structured output parses into the `types.py` schemas;
+  (b) the model cites by integer index (schema-enforced `list[int]`), never doc_ids; (c) indices resolve
+  to real spans via `resolve_citations`; (d) the Batch-2 scorer consumes the `ResolvedAnswerObject`.
+  Two non-plumbing findings surfaced: (1) **citation grain** — fixed below; (2) **attribute phrasing /
+  claim decomposition** — the agent said `"approval status"` vs golden `"approval status in IgA
+  nephropathy"` (fuzzy 0.48 → unmatched → recall 0.0); **deferred to 6b prompt tuning**.
+- **Citation-faithfulness direction CORRECTED (this commit).** The agent cites at **chunk grain**
+  (`corpus_retrieve` returns chunk spans, e.g. `(432,486)`) while the golden blesses **sub-chunk** spans
+  (e.g. `(443,445)`); the original `agent_span ⊆ acceptable_span` demanded a granularity the agent never
+  sees. Reversed to **`acceptable_span ⊆ agent_span`** in `agent_metrics._span_contained` (binary,
+  OR-semantics retained). `AGENT_CONTRACT.md` §3.4 updated with the corrected direction + the
+  **boundedness assumption** (`corpus_retrieve` emits single-chunk-bounded citations, so an over-broad
+  citation cannot arise from the real agent) + 6a provenance — a deliberate, documented change to a
+  frozen artifact. A sixth sanity agent **`OVER_BROAD`** makes the flip's one false-positive (a
+  document-spanning citation is faithful) explicit and out-of-scope-for-the-real-agent.
+- **Trust gate re-verified (6 agents).** ORACLE 1.0 (reflexivity), CITATION_FAILURE still fails (its
+  far-shifted span does not contain the golden span), HALLUCINATION/OVERCLAIM unchanged, OVER_BROAD
+  faithful-and-documented. Suite **135**. (The Q1 chunk citation `(432,486) ⊇ (443,445)` is now faithful;
+  shown on a matched variant — the captured Q1 claim itself stays unmatched on attribute pending 6b.)
+
+### Next — Batch 6b: full 13-question run + first eval numbers
+- Tune the SYNTHESIZE prompt toward the golden's claim granularity (the attribute-phrasing finding),
+  run the full agent over all 13 golden questions, and score sliced (AGENT_CONTRACT §5) for the first
+  full Phase-4A eval numbers. Commit `gemini_seam.py` with that pass.
+
+---
+
+## Phase 4A — agent loop + real corpus_retrieve + resolution wired; plumbing COMPLETE (2026-06-13)
+
+**AUTHORITATIVE STATUS:** **Phase 4A agent plumbing is COMPLETE and tested WITHOUT quota; the
+end-to-end contract is proven with stubbed reasoning. NO Gemini calls yet — the three LLM seams are
+still stubbed.** On branch `phase-4-agent`, the research-agent control loop, the code-owned
+terminal-state machine, the real `corpus_retrieve` tool, and the evidence-index→span resolution layer
+are built and unit-tested (suite **135**). Committed:
+
+- **Agent loop + state machine (Batch 4).** `src/agent/types.py` (PLAN/ASSESS/SYNTHESIZE output
+  schemas, `EvidenceItem`, the `LLMSeam`/`RetrieverSeam` Protocols, the `Trajectory` record) +
+  `src/agent/loop.py` (`run_agent`: PLAN once → [retrieve → ASSESS]* → SYNTHESIZE/refuse; hard
+  max-iterations cap §5.6; the §5.5 terminal-state machine — terminal state assigned by CODE, never
+  model-declared; §5.8 synthesis validation + one-retry degrade; loud-on-malformed verdict check). LLM
+  + retriever are injected behind the seams (DI stubs in tests).
+- **Real corpus_retrieve + resolution (Batch 5).** `src/agent/retrieval.py`: `corpus_retrieve(query)`
+  = **chunk@10 ∪ fused@10**, span-deduped, **≤20 spans**, `k=10` fixed / non-agent-controllable (§5.3),
+  **reusing the committed Phase 3 retriever** (`chunk_leg`, `entity_leg`, `rrf_fuse_by_span`) — no
+  retrieval reimplemented; `CorpusRetriever` is the `RetrieverSeam` (fan-out per sub-query, union by
+  span). `src/agent/resolve.py`: `resolve_citations` maps cited evidence indices → `(doc_id,
+  line_range)` spans (§5.7). The loop now accumulates a **span-deduped numbered evidence table**.
+- **Tested without quota.** `tests/agent/test_loop.py` (20) + `tests/agent/test_retrieval.py` (8):
+  every §5.5 branch, the §5.6 cap, §5.8 degrade, the well-formedness raise, cross-iteration dedup, the
+  union/dedup/chunk-text logic (mock + a **real-corpus smoke test** against the live FAISS indexes,
+  134 chunk / 307 entity units), resolution, and the **end-to-end** stubbed-LLM loop → resolution →
+  `ResolvedAnswerObject` → **Batch-2 scorer = 1.0** on golden Q1 (contract holds end-to-end).
+  `fastembed` is local — no Gemini quota spent.
+
+### Next — Batch 6: fill the three LLM seams with real Gemini calls
+- Implement PLAN / ASSESS / SYNTHESIZE behind the `LLMSeam` (prompts + Gemini structured-output calls;
+  model configurable, Flash-Lite per §5.1), then run the full agent over the 13-question golden and
+  score with the validated Batch-2 scorer (sliced per AGENT_CONTRACT §5). **This is the first Phase-4A
+  batch that spends quota.**
+
+---
+
+## Phase 4A — baseline evaluation harness COMPLETE + validated (2026-06-12)
+
+**AUTHORITATIVE STATUS:** **Phase 4A (Q&A mode, corpus-only) baseline evaluation harness is COMPLETE
+and VALIDATED; NO agent code exists yet.** On branch `phase-4-agent` (cut from `main`), the design is
+locked in `docs/AGENT_PLAN.md` (incl. the §5.5 amendment `0e7760c`). The measurement was built and
+proven **before** any agent (the Phase-2 measure-before-the-thing discipline). Committed:
+
+- **Golden — FROZEN + committed** (`4b50c0c`). `src/evals/golden/agent.golden.json` (`agent-golden-v1`):
+  **13 questions** (Q1–Q9, P1, P3, I2, I3 — gaps at I1/P2 intentional), **9 answered / 2
+  partially_answered / 2 insufficient_evidence**, **21 reference claims**. Human-authored from source per
+  AGENT_PLAN §4.1, then transcribed verbatim; full `document_id` doc_ids; Q2-c1 span L236–248.
+- **Answer-object ↔ scorer contract — FROZEN + committed** (`117b258`). `docs/AGENT_CONTRACT.md`: the
+  frozen interface the scorer + future agent build against so they **cannot drift** (cite-by-evidence-
+  index answer-object, resolved-answer-object via `resolve_citations`, the four metrics, the §4
+  insufficient rule, sliced within-stratum aggregation).
+- **Answer-object schema — committed** (`4bdedb5`). `src/evals/answer_object.py` — Pydantic v2
+  `AnswerObject`/`Claim` + resolved forms (`Span`, 1-based-inclusive `line_range`). The
+  claims-empty-on-insufficient rule is a **scorer** criterion, not a schema validator (so the
+  over-claim case stays representable).
+- **Scorer — committed** (`1f10871`). `src/evals/agent_value_match.py` (deterministic value layer:
+  closed-set canonicalizer for phase / status / count / indication_present + structured comparator for
+  currency-magnitude & sign-preserved percentage-pair; **raises** on unrecognized shapes) +
+  `src/evals/agent_metrics.py` (the four metrics: `terminal_state_correct`, `claim_recall` + wrong-value
+  diagnostic, `claim_precision` [**matched-only**: unlisted claims excluded not penalized],
+  `citation_faithfulness`; reuses `retrieval_scorer.line_containment`). Status atoms collapse
+  filed+submission → one `pending_filing` atom; `approved` kept distinct.
+- **Scorer trust gate — committed** (this commit). `tests/evals/test_agent_scorer_sanity.py`: five
+  known-output sanity agents (null / oracle / citation-failure / hallucination /
+  over-claiming-on-insufficient) × an **independently-derived, hardcoded** expected-score matrix
+  asserted over all 13 questions (**65 cells**). **ORACLE scores 1.0 across every claim-bearing question
+  including prose values** → the value layer round-trips the golden; citation-failure proves
+  recall⟂faithfulness; hallucination proves matched-only precision both ways; over-claim proves §4 (not
+  precision) catches insufficient-question confabulation. Suite **107 passing**.
+
+### Next — agent implementation (NO agent code yet)
+- Build the research agent against the frozen contract + validated scorer, in steps: **loop skeleton
+  (code-owned PLAN–ASSESS–SYNTHESIZE state machine, unit-testable without API) → `corpus_retrieve`
+  wiring (chunk@10 ∪ fused@10) → real Flash-Lite LLM calls**. `src/agent/` and `src/tools/` remain
+  scaffold-only. The baseline answer/scorer harness now exists to measure that agent from day one.
+
+---
+
 ## Phase 3 — MERGED to main (2026-06-12)
 
 **AUTHORITATIVE STATUS:** **Phase 3 COMPLETE and merged to `main`; Phase 4 not started.** Branch

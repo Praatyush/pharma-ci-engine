@@ -1,0 +1,398 @@
+{
+  "golden_schema_version": "agent-golden-v1",
+  "questions": [
+    {
+      "question_id": "Q1",
+      "question": "What is the approval status of Vanrafia in IgA nephropathy?",
+      "construct": "single",
+      "expected_terminal_state": "answered",
+      "reference_claims": [
+        {
+          "claim_id": "Q1-c1",
+          "subject": "Vanrafia",
+          "attribute": "approval status in IgA nephropathy",
+          "value": "approved 2025 (US and China)",
+          "acceptable_spans": [
+            {
+              "doc_id": "q1-2026-interim-financial-report-en",
+              "line_range": [443, 445]
+            }
+          ]
+        }
+      ],
+      "verified_gap": null,
+      "verified_absence": null,
+      "authoring_notes": "Year-only per source — no month/day exists, do not author a date. Subject 'Vanrafia' (source's term), NOT 'atrasentan' (generic never appears in source). Unique-reach regression sentinel: Vanrafia sits in an un-extracted chunk reachable only via the chunk-leg backbone; if corpus_retrieve regresses to fused-only this question fails first."
+    },
+    {
+      "question_id": "Q2",
+      "question": "What development stage is fazirsiran in for AATD liver disease in the US?",
+      "construct": "single",
+      "expected_terminal_state": "answered",
+      "reference_claims": [
+        {
+          "claim_id": "Q2-c1",
+          "subject": "fazirsiran",
+          "attribute": "development stage for AATD liver disease in the US",
+          "value": "Phase III",
+          "acceptable_spans": [
+            {
+              "doc_id": "qr2025_q4_Pipeline_table_en",
+              "line_range": [236, 248]
+            }
+          ]
+        }
+      ],
+      "verified_gap": null,
+      "verified_absence": null,
+      "authoring_notes": "Region pinned to US in the question (resolves US-P-III vs EU-P-III collision; both are P-III but the pin keeps the claim single-valued). EU cell out of scope. SPAN GRANULARITY: confirm L248 is self-contained; if the stage cell's meaning needs the row/indication label on an adjacent line, widen the span to include it — if so, STOP and report rather than guessing the widened range. Span widened from the bare US stage cell to L236–L248 to capture the reasonable evidence region for the US AATD claim: L236 (TAK-999 asset), L239 (fazirsiran INN), L245 (AATD liver disease indication), L246 (US region label), L248 (US Phase III stage cell). Upper bound stops at L248, deliberately EXCLUDING L249 (the EU stage cell) since EU is out of scope per the region pin. The bare [248,248] was rejected as non-self-containing — it carries only the stage token with no asset/indication/region."
+    },
+    {
+      "question_id": "Q3",
+      "question": "Which assets does Novartis report in IgA nephropathy?",
+      "construct": "set_of_singles",
+      "expected_terminal_state": "answered",
+      "reference_claims": [
+        {
+          "claim_id": "Q3-c1",
+          "subject": "Vanrafia",
+          "attribute": "IgA nephropathy lifecycle register",
+          "value": "approved 2025",
+          "acceptable_spans": [
+            {
+              "doc_id": "q1-2026-interim-financial-report-en",
+              "line_range": [443, 445]
+            }
+          ]
+        },
+        {
+          "claim_id": "Q3-c2",
+          "subject": "Fabhalta",
+          "attribute": "IgA nephropathy regulatory status",
+          "value": "under regulatory submission (JP submission Q1 2026; FDA priority review granted)",
+          "acceptable_spans": [
+            {
+              "doc_id": "q1-2026-interim-financial-report-en",
+              "line_range": [974, 978]
+            }
+          ]
+        },
+        {
+          "claim_id": "Q3-c3",
+          "subject": "zigakibart",
+          "attribute": "IgA nephropathy lifecycle register",
+          "value": "Phase III pipeline project (first planned submission 2027)",
+          "acceptable_spans": [
+            {
+              "doc_id": "q1-2026-interim-financial-report-en",
+              "line_range": [1015, 1016]
+            }
+          ]
+        }
+      ],
+      "verified_gap": null,
+      "verified_absence": null,
+      "authoring_notes": "Exhaustive enumeration — all three required (completeness is the point). All-registers framing (question dropped 'in development' so Vanrafia's approved status isn't contestable; each claim carries its own register as value). Three distinct registers by design: Vanrafia approved, Fabhalta under-submission, zigakibart Phase III pre-submission — each value matches its source-stated register; the enumeration does not require uniform lifecycle stage. Vanrafia value consistent with Q1-c1. Fabhalta is NOT approved — source shows submission/under-review only (no 'Approved', US/EU blank, JP submission Q1 2026); status location L974–978 blessed, L5034 net-sales indication-list NOT blessed. Fabhalta required in Q3 only (Q5 anchored on Vanrafia per P1 precedent → no cross-question value duplication). Zigakibart span L1015–1016 spans both the fact line (L1015: indication + 2027 + Phase 3) and the INN line (L1016); the column-header dependency at L999–1000 is table structure, not a span extension."
+    },
+    {
+      "question_id": "Q4",
+      "question": "Which Takeda programs are at Filed stage in China?",
+      "construct": "set_of_singles",
+      "expected_terminal_state": "answered",
+      "reference_claims": [
+        {
+          "claim_id": "Q4-c1",
+          "subject": "TAK-755 (rADAMTS13/ADZYNMA)",
+          "attribute": "China filing stage",
+          "value": "Filed (March 2025)",
+          "acceptable_spans": [
+            {
+              "doc_id": "qr2025_q4_Pipeline_table_en",
+              "line_range": [209, 220]
+            }
+          ]
+        },
+        {
+          "claim_id": "Q4-c2",
+          "subject": "oveporexton (TAK-861)",
+          "attribute": "China filing stage",
+          "value": "Filed (January 2026)",
+          "acceptable_spans": [
+            {
+              "doc_id": "qr2025_q4_Pipeline_table_en",
+              "line_range": [334, 351]
+            }
+          ]
+        },
+        {
+          "claim_id": "Q4-c3",
+          "subject": "TAK-660 (ADYNOVATE/ADYNOVI)",
+          "attribute": "China filing stage",
+          "value": "Filed (July 2025)",
+          "acceptable_spans": [
+            {
+              "doc_id": "qr2025_q4_Pipeline_table_en",
+              "line_range": [517, 528]
+            }
+          ]
+        }
+      ],
+      "verified_gap": null,
+      "verified_absence": null,
+      "authoring_notes": "China-Filed set verified COMPLETE at three by a dedicated completeness sweep (oveporexton was the program missed by an earlier partial list). Region pinned to China in the question. oveporexton and TAK-660 are multi-region — other-region stages are deliberately OUT of scope for the claim; do NOT add them (would smuggle a fourth discriminator). Attribute is China-filing-stage specifically."
+    },
+    {
+      "question_id": "Q5",
+      "question": "Compare Takeda's and Novartis's development in IgA nephropathy.",
+      "construct": "comparison",
+      "expected_terminal_state": "answered",
+      "reference_claims": [
+        {
+          "claim_id": "Q5-c1",
+          "subject": "mezagitamab (TAK-079)",
+          "attribute": "IgA nephropathy development stage",
+          "value": "Phase III",
+          "acceptable_spans": [
+            {
+              "doc_id": "qr2025_q4_Pipeline_table_en",
+              "line_range": [286, 288]
+            }
+          ]
+        },
+        {
+          "claim_id": "Q5-c2",
+          "subject": "Vanrafia",
+          "attribute": "IgA nephropathy approval status",
+          "value": "approved 2025",
+          "acceptable_spans": [
+            {
+              "doc_id": "q1-2026-interim-financial-report-en",
+              "line_range": [443, 445]
+            }
+          ]
+        }
+      ],
+      "verified_gap": null,
+      "verified_absence": null,
+      "authoring_notes": "Comparison, 1-vs-N asymmetry (Takeda one IgAN asset, Novartis multiple). Novartis side ANCHORED on Vanrafia (lead approved asset) per the P1 precedent — Fabhalta and zigakibart are IgAN-relevant but NOT required (faithfulness-covered extras). The anchored decision eliminated the Q3<->Q5 Fabhalta consistency obligation. Vanrafia value consistent with Q1-c1 and Q3-c1."
+    },
+    {
+      "question_id": "Q6",
+      "question": "Compare Takeda's and Novartis's presence in polycythemia vera.",
+      "construct": "comparison",
+      "expected_terminal_state": "answered",
+      "reference_claims": [
+        {
+          "claim_id": "Q6-c1",
+          "subject": "rusfertide",
+          "attribute": "polycythemia vera development stage",
+          "value": "Filed (US, February 2026)",
+          "acceptable_spans": [
+            {
+              "doc_id": "qr2025_q4_Pipeline_table_en",
+              "line_range": [404, 413]
+            }
+          ]
+        },
+        {
+          "claim_id": "Q6-c2",
+          "subject": "Jakavi",
+          "attribute": "polycythemia vera indication presence",
+          "value": "PV is a listed indication for Jakavi; no separate stage, status, or figure stated",
+          "acceptable_spans": [
+            {
+              "doc_id": "q1-2026-interim-financial-report-en",
+              "line_range": [4422, 4454]
+            }
+          ]
+        }
+      ],
+      "verified_gap": null,
+      "verified_absence": null,
+      "authoring_notes": "DELIBERATE ASYMMETRY (verified): Takeda side is a dated development fact (rusfertide Filed); Novartis side is a bare indication-list entry (Jakavi/PV, no stage). Do NOT symmetrize — do not manufacture a Novartis PV stage. Jakavi span runs L4422–4454 because 'vera (PV)' at L4438 continues the indication string and the 'Jakavi' label is at L4422; a narrower span is meaningless. Attribute is 'polycythemia vera indication presence', NOT 'PV stage'."
+    },
+    {
+      "question_id": "Q7",
+      "question": "Compare the reported net sales of Kesimpta and Aimovig.",
+      "construct": "comparison",
+      "expected_terminal_state": "answered",
+      "reference_claims": [
+        {
+          "claim_id": "Q7-c1",
+          "subject": "Kesimpta",
+          "attribute": "Q1 2026 net sales",
+          "value": "USD 1,164m",
+          "acceptable_spans": [
+            {
+              "doc_id": "q1-2026-interim-financial-report-en",
+              "line_range": [566, 566]
+            }
+          ]
+        },
+        {
+          "claim_id": "Q7-c2",
+          "subject": "Aimovig",
+          "attribute": "Q1 2026 net sales",
+          "value": "USD 95m",
+          "acceptable_spans": [
+            {
+              "doc_id": "q1-2026-interim-financial-report-en",
+              "line_range": [582, 582]
+            }
+          ]
+        }
+      ],
+      "verified_gap": null,
+      "verified_absence": null,
+      "authoring_notes": "Within-document comparison (foil to Q5/Q6 cross-doc). Primary Neuroscience table blessed; the L3700+ restatements EXCLUDED (single-location rule). Net-sales VALUES, not growth (P3 is the growth question). Disjoint from Q9 by design. SPAN GRANULARITY: confirm each figure line is self-contained or includes the product label; if a label sits on a separate line and the span needs widening, STOP and report rather than guessing."
+    },
+    {
+      "question_id": "Q8",
+      "question": "How many Takeda new molecular entities (NMEs) are in Phase 3?",
+      "construct": "aggregate",
+      "expected_terminal_state": "answered",
+      "reference_claims": [
+        {
+          "claim_id": "Q8-c1",
+          "subject": "Takeda pipeline",
+          "attribute": "number of NMEs in Phase 3",
+          "value": "8",
+          "acceptable_spans": [
+            {
+              "doc_id": "qr2025_q4_Pipeline_table_en",
+              "line_range": [23, 23]
+            }
+          ]
+        }
+      ],
+      "verified_gap": null,
+      "verified_absence": null,
+      "authoring_notes": "Pinned to NMEs because L23 states the count SPLIT as NMEs+LCMs ('PHASE 3 (8 NMEs + 5 LCMs)'), not a single total — '8' is the verbatim stated NME figure, requiring no summation (which would reintroduce edge-row contestability). Value is what the source states, not a row-tally."
+    },
+    {
+      "question_id": "Q9",
+      "question": "What net sales does Novartis report for Kisqali, Pluvicto, and Scemblix?",
+      "construct": "aggregate",
+      "expected_terminal_state": "answered",
+      "reference_claims": [
+        {
+          "claim_id": "Q9-c1",
+          "subject": "Kisqali",
+          "attribute": "Q1 2026 net sales",
+          "value": "USD 1,516m",
+          "acceptable_spans": [
+            {
+              "doc_id": "q1-2026-interim-financial-report-en",
+              "line_range": [631, 631]
+            }
+          ]
+        },
+        {
+          "claim_id": "Q9-c2",
+          "subject": "Pluvicto",
+          "attribute": "Q1 2026 net sales",
+          "value": "USD 642m",
+          "acceptable_spans": [
+            {
+              "doc_id": "q1-2026-interim-financial-report-en",
+              "line_range": [639, 639]
+            }
+          ]
+        },
+        {
+          "claim_id": "Q9-c3",
+          "subject": "Scemblix",
+          "attribute": "Q1 2026 net sales",
+          "value": "USD 433m",
+          "acceptable_spans": [
+            {
+              "doc_id": "q1-2026-interim-financial-report-en",
+              "line_range": [665, 665]
+            }
+          ]
+        }
+      ],
+      "verified_gap": null,
+      "verified_absence": null,
+      "authoring_notes": "Aggregate over named single-asset rows (named in the question → combination/group/'nm' rows excluded by construction). Primary Oncology table blessed; restatements EXCLUDED. Fabhalta deliberately NOT in this set (indication/region split is a 4th-discriminator hazard, and it is already load-bearing in Q3/Q5). Disjoint from Q7. SPAN GRANULARITY: confirm all three figure lines self-contained; if a product label needs including and the span needs widening, STOP and report rather than guessing."
+    },
+    {
+      "question_id": "P1",
+      "question": "Compare Takeda's and Novartis's development in narcolepsy.",
+      "construct": "comparison",
+      "expected_terminal_state": "partially_answered",
+      "reference_claims": [
+        {
+          "claim_id": "P1-c1",
+          "subject": "oveporexton (TAK-861)",
+          "attribute": "narcolepsy development stage",
+          "value": "Filed (US, Japan, China)",
+          "acceptable_spans": [
+            {
+              "doc_id": "qr2025_q4_Pipeline_table_en",
+              "line_range": [334, 351]
+            }
+          ]
+        }
+      ],
+      "verified_gap": "Novartis has no narcolepsy program anywhere in its document, confirmed document-wide (zero hits on narcolepsy/orexin/hypersomnia/wakefulness/cataplexy/sleep; the Neuroscience table and the broad pipeline were read to rule out a mechanism-described program). The comparison is completable for Takeda but not for Novartis.",
+      "verified_absence": null,
+      "authoring_notes": "Comparison anchored on the lead asset, NOT an exhaustive franchise enumeration. TAK-360 and TAK-495 are narcolepsy-relevant but NOT in the reference set; if the agent surfaces them with valid citations, faithfulness covers them — no penalty, no requirement. The verified_gap (Novartis absence) is what makes this partially_answered rather than answered."
+    },
+    {
+      "question_id": "P3",
+      "question": "What year-over-year net sales growth does Novartis report for Cosentyx, Ilaris, and Rhapsido?",
+      "construct": "aggregate",
+      "expected_terminal_state": "partially_answered",
+      "reference_claims": [
+        {
+          "claim_id": "P3-c1",
+          "subject": "Cosentyx",
+          "attribute": "year-over-year net sales growth (Q1 2026 vs Q1 2025)",
+          "value": "+2% USD / -2% cc",
+          "acceptable_spans": [
+            {
+              "doc_id": "q1-2026-interim-financial-report-en",
+              "line_range": [471, 477]
+            }
+          ]
+        },
+        {
+          "claim_id": "P3-c2",
+          "subject": "Ilaris",
+          "attribute": "year-over-year net sales growth (Q1 2026 vs Q1 2025)",
+          "value": "+13% USD / +10% cc",
+          "acceptable_spans": [
+            {
+              "doc_id": "q1-2026-interim-financial-report-en",
+              "line_range": [489, 495]
+            }
+          ]
+        }
+      ],
+      "verified_gap": "Rhapsido's Q1 2025 prior-year figure is not reported (cell blank); the source marks the %-change cells 'nm' (L511, L513). Year-over-year growth for Rhapsido is therefore not computable from source. A correct response gives Cosentyx and Ilaris growth and reports that Rhapsido's growth is unavailable.",
+      "verified_absence": null,
+      "authoring_notes": "Values are the source's verbatim printed %-change (not computed). Gap wording matches what the source shows: prior-year BLANK + %-change 'nm', NOT 'prior-year = nm'. Primary Immunology location blessed; the L3770/L3778/L3796 restatements EXCLUDED. Cosentyx footnote sub-line L479–487 ('excluding revenue-deduction-adjustments', 5/2) EXCLUDED — claim is on headline net-sales growth only."
+    },
+    {
+      "question_id": "I2",
+      "question": "What is Merck's position in polycythemia vera?",
+      "construct": "comparison",
+      "expected_terminal_state": "insufficient_evidence",
+      "reference_claims": [],
+      "verified_gap": null,
+      "verified_absence": "No Merck/MSD content (including subsidiary variants Organon, Sharp & Dohme) appears anywhere in either source document, confirmed by document-wide grep. Polycythemia vera content IS present (Novartis Jakavi; Takeda rusfertide) and is a distractor: a correct response reaches insufficient_evidence and does NOT answer about Merck using other companies' PV assets.",
+      "authoring_notes": "Pass condition: agent reaches insufficient_evidence AND emits no claim about Merck. If the agent emits a PV claim citing Jakavi/rusfertide on this Merck question, precision catches it as unsupported-for-this-question. Distractor documented in prose (schema decision: no structured distractor field)."
+    },
+    {
+      "question_id": "I3",
+      "question": "What is the current recruitment status of Takeda's Phase 3 oveporexton trial?",
+      "construct": "single",
+      "expected_terminal_state": "insufficient_evidence",
+      "reference_claims": [],
+      "verified_gap": null,
+      "verified_absence": "The corpus contains no recruitment/enrollment status for oveporexton (TAK-861); all oveporexton occurrences carry only regulatory stage. Recruitment-status language EXISTS for other assets — TAK-755 'actively recruiting' (Takeda L15, L374, L853); GIA632 and Votoplam 'achieved FPFV' (Novartis L1024, L1079) — and is a distractor the agent must not transfer to oveporexton.",
+      "authoring_notes": "Doubles as a 4c live-tool seed (recruitment status is what ClinicalTrials.gov provides). Failure mode is specifically mis-attribution of TAK-755/GIA632/Votoplam recruitment status to oveporexton, not flat 'no answer'."
+    }
+  ]
+}
