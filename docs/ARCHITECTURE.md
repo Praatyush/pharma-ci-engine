@@ -165,7 +165,7 @@ The harness scores against **hand-authored golden datasets** (`src/evals/golden/
 pharma-ci-engine/
 ├── README.md                 # project front door
 ├── pyproject.toml            # dependencies + build + pytest config (single source; no requirements.txt)
-├── .env.example              # template only — never commit a real .env
+├── .env.example              # template only: never commit a real .env
 ├── docs/
 │   ├── ARCHITECTURE.md            # this document
 │   ├── EVALUATION_CASE_STUDY.md   # the measurement narrative
