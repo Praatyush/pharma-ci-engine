@@ -84,7 +84,7 @@ The **agent's results are documented, not reproducible from a clean clone** — 
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
-pytest                                  # 144 tests
+pytest                                  # 146 tests
 ```
 
 Running the extraction, retrieval, or agent commands additionally requires a source corpus under `data/` (gitignored) and a Gemini API key in `.env`:

@@ -182,7 +182,7 @@ pharma-ci-engine/
 │       ├── golden/
 │       └── fixtures/
 ├── data/             # GITIGNORED: corpus markdown, extraction artifacts, FAISS index
-└── tests/            # 144 tests across all components
+└── tests/            # 146 tests across all components
 ```
 
 Per-directory operating notes for the development tooling live in `CLAUDE.md` files at the root and in each `src/` module; they govern how the code agent runs and are intentionally separate from this design reference.
